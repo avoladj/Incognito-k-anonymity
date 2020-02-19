@@ -1,0 +1,19 @@
+BASIC DEFINITIONS:
+
+Quasi-identifier set Q:
+is a minimal set of attributes in table T that can be joined with external information to re-identify individual records.
+
+Frequency set of T with respect to Q:
+is a mapping from each unique combination of values <q0,...,qn> of Q in T (the value groups) to the total number of tuples in T with these values of Q (the counts). È l'insieme di quante volta una tuple compare.
+Obtained from T wrt a set of attributes Q by issuing a COUNT(*) query, with Q as the attribute list in the GROUP BY clause.
+
+k-anonymity property:
+relation T is said to satisfy the k-anonymity property (or to be k-anonymous) with respect to attribute set Q if every count in the frequency set of T with respect to Q is greater than or equal to k.
+
+k-anonymization:
+A view V of a relation T is said to be k-anonymization of T if the view modifies, distorts, or suppresses the data of T according to some mechanism such that V satisfies the k-anonymity property wrt the set of quasi-identifier attributes. T and V are assumed to be multisets of tuples. WE ASSUME THAT ONLY A SINGLE ANONYMIZATION IS RELEASED.
+
+GENERALIZATION AND SUPPRESSION:
+
+There is a domain (int, date..) associated with each attribute of a relation. Given this domain, it is possibile to construct a more general domain in a variety of ways. eg: Zipcode domain can be generalized by dropping the least significant digit. This is the domain generalization relationship, denoted by <_D and we use the notation Di ≤_D Dj to denote that domain Dj is either identical to or a domain generalization of Di.
+A many-to-one value generalization function 
