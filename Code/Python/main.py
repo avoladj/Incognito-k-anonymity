@@ -105,7 +105,33 @@ def create_tables_Ci_Ei():
 
 
 def get_height_of_node(node, Ci, Ei):
-    # TODO
+    # node == actual node == arrival node. Distance is distance between node and the root
+    DV = []
+
+    pass
+
+
+def frequency_set_of_T_wrt_attributes_of_node_using_T():
+    pass
+
+
+def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set():
+    pass
+
+
+class T_is_k_anonymous_wrt_attributes_of_node(object):
+    pass
+
+
+def mark_all_direct_generalizations_of_node():
+    pass
+
+
+def insert_direct_generalization_of_node_in_queue(node, queue):
+    pass
+
+
+def graph_generation(Si, Ei):
     pass
 
 
@@ -117,7 +143,7 @@ def basic_incognito_algorithm(cursor, priority_queue):
         cursor.execute("SELECT * FROM Ci")
         Si = set(cursor)
 
-        #theese 3 lines for practicality
+        # theese 3 lines for practicality
         Ci = set(Si)
         cursor.execute("SELECT * FROM Ei")
         Ei = set(cursor)
@@ -126,12 +152,35 @@ def basic_incognito_algorithm(cursor, priority_queue):
         cursor.execute("SELECT * FROM Ci WHERE parent1='null' ")
         roots = set(cursor)
         roots_in_queue = set()
+
         for node in roots:
-            height = get_height_of_node(node, Ci, Ei)
-            # -height because priority queue shows the lowest first
+            # height = 0 because these nodes are roots
+            height = 0
+            marked = False
+            node = (marked, node)
+            # -height because priority queue shows the lowest first. Syntax: (priority number, data)
             roots_in_queue.add((-height, node))
-        for node in roots_in_queue:
-            queue.put(node)
+
+        for upgraded_node in roots_in_queue:
+            queue.put_nowait(upgraded_node)
+
+        while not queue.empty():
+            upgraded_node = queue.get_nowait()
+            # [1] => pick 'node' in (-height, node); [0] => pick 'marked' in (marked, node)
+            node = upgraded_node[1]
+            if not node[0]:
+                frequency_set = set()
+                if node in roots:
+                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T()
+                else:
+                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set()
+                if T_is_k_anonymous_wrt_attributes_of_node():
+                    mark_all_direct_generalizations_of_node()
+                else:
+                    Si.remove(node)
+                    insert_direct_generalization_of_node_in_queue(node, queue)
+        # Ci, Ei =
+        graph_generation(Si, Ei)
 
 
 if __name__ == "__main__":
