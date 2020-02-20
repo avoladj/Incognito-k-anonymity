@@ -79,10 +79,11 @@ def init_C1_and_E1():
         index = 0
         for node in dimension_tables[dimension]:
             # parenty = index - y
+            # parent2 is the parent of parent1
             parent1 = get_parent_index_C1(index, 1)
             parent2 = get_parent_index_C1(index, 2)
-            tupla = (id, node, index, parent1, parent2)
-            cursor.execute("INSERT INTO Ci values (?, ?, ?, ?, ?)", tupla)
+            tuple = (id, node, index, parent1, parent2)
+            cursor.execute("INSERT INTO Ci values (?, ?, ?, ?, ?)", tuple)
             if index >= 1:
                 cursor.execute("INSERT INTO Ei values (?, ?)", (id - 1, id))
             id += 1
@@ -97,6 +98,7 @@ def init_C1_and_E1():
 
 
 def create_tables_Ci_Ei():
+    # Ci initally has only one pair dimx, indexx, which will increment if k-anonymity is not achieved
     # autoincrement id starts from 1 by default
     cursor.execute(
         "CREATE TABLE IF NOT EXISTS Ci (ID INTEGER PRIMARY KEY, dim1 TEXT, index1 INT, parent1 INT, parent2 INT)")
@@ -184,7 +186,7 @@ def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
     return len(frequency_set) < int(k)
 
 
-def basic_incognito_algorithm(cursor, priority_queue, Q, k):
+def basic_incognito_algorithm(priority_queue, Q, k):
     init_C1_and_E1()
     queue = priority_queue
     # marked_nodes = {(marked, node_ID)}
@@ -194,12 +196,12 @@ def basic_incognito_algorithm(cursor, priority_queue, Q, k):
         cursor.execute("SELECT * FROM Ci")
         Si = set(cursor)
 
-        # theese 3 lines for practicality
+        # these next 3 lines are for practicality
         Ci = set(Si)
         cursor.execute("SELECT * FROM Ei")
         Ei = set(cursor)
 
-        # no edge directed to them ==== have no parent1 (and no parent2)
+        # no edge directed to a node ==> node has no parent1 (and thus no parent2) ==> root
         cursor.execute("SELECT * FROM Ci WHERE parent1='null' ")
         roots = set(cursor)
         roots_in_queue = set()
@@ -265,6 +267,6 @@ if __name__ == "__main__":
     create_tables_Ci_Ei()
 
     # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
-    basic_incognito_algorithm(cursor, queue.PriorityQueue(), Q, k)
+    basic_incognito_algorithm(queue.PriorityQueue(), Q, k)
 
     connection.close()
