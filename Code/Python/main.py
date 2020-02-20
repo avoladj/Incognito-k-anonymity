@@ -145,10 +145,13 @@ def get_height_of_node_by_id(node_to_put):
 
 def insert_direct_generalization_of_node_in_queue(node, queue):
     cursor.execute("SELECT Ei.end FROM Ci, Ei WHERE ID = Ei.start and ID = " + str(node[0]))
-    for node_to_put in list(cursor):
+    nodes_to_put = set(cursor)
+    for node_to_put in nodes_to_put:
         # node_to_put == (ID,) -.-
         node_to_put = node_to_put[0]
-        queue.put_nowait((-get_height_of_node_by_id(node_to_put), node_to_put))
+        cursor.execute("SELECT * FROM Ci WHERE ID = " + str(node_to_put))
+        node = (list(cursor)[0])
+        queue.put_nowait((-get_height_of_node(node), node))
 
 
 def graph_generation(Si, Ei, i):
@@ -156,10 +159,10 @@ def graph_generation(Si, Ei, i):
     cursor.execute("ALTER TABLE Ci ADD COLUMN index" + str(i) + " INT")
     connection.commit()
     # TODO
-    cursor.execute("INSERT INTO Ei"
-                   "WITH CandidatesEdges(start,end) AS ("
+    cursor.execute("INSERT INTO Ei "
+                   "WITH CandidatesEdges(start, end) AS ("
                    "SELECT p.ID, q.ID"
-                   "FROM Ci p,Ci q,Ei e,Ei f"
+                   "FROM Ci as p,Ci as q,Ei as e,Ei as f"
                    "WHERE (e.start = p.parent1 and e.end = q.parent1"
                    "and f.start = p.parent2 and f.end = q.parent2)"
                    "or (e.start = p.parent1 and e.end = q.parent1"
@@ -168,10 +171,10 @@ def graph_generation(Si, Ei, i):
                    "and p.parent1 = q.parent1)"
                    ")"
                    "SELECT D.start, D.end"
-                   "FROM CandidateEdges D"
+                   "FROM CandidateEdges as D"
                    "EXCEPT"
                    "SELECT D1.start, D2.end"
-                   "FROM CandidateEdges D1, CandidateEdges D2"
+                   "FROM CandidateEdges as D1, CandidateEdges as D2"
                    "WHERE D1.end = D2.start")
     print(list(cursor))
     pass
@@ -225,7 +228,7 @@ def basic_incognito_algorithm(cursor, priority_queue, Q, k):
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue)
         # Ci, Ei =
-        graph_generation(Si, Ei, i)
+        graph_generation(Si, Ei, i+1)
 
 
 if __name__ == "__main__":
