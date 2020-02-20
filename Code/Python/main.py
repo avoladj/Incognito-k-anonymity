@@ -104,40 +104,88 @@ def create_tables_Ci_Ei():
     connection.commit()
 
 
-def get_height_of_node(node, Ci, Ei):
-    # node == actual node == arrival node. Distance is distance between node and the root
-    DV = []
-
-    pass
-
-
-def frequency_set_of_T_wrt_attributes_of_node_using_T():
-    pass
-
-
-def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set():
-    pass
-
-
-class T_is_k_anonymous_wrt_attributes_of_node(object):
-    pass
+def get_height_of_node(node):
+    # sum of the indexes in a row (node)
+    i = 0
+    height = 0
+    length = len(node)
+    while True:
+        # 2+5*0, 2+5*1, 2+10*2, ...
+        j = 2 + 5*i
+        if j >= length:
+            break
+        height += node[j]
+        i += 1
+    return height
 
 
-def mark_all_direct_generalizations_of_node():
-    pass
+def frequency_set_of_T_wrt_attributes_of_node_using_T(Q):
+    cursor.execute("SELECT COUNT(*) FROM AdultData GROUP BY " + ', '.join(Q))
+    freq_set = list()
+    for count in list(cursor):
+        freq_set.append(count[0])
+    return freq_set
+
+
+def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(frequency_set):
+    # TODO
+    return frequency_set
+
+
+def mark_all_direct_generalizations_of_node(marked_nodes, node):
+    cursor.execute("SELECT Ei.end FROM Ci, Ei WHERE ID = Ei.start and ID = " + str(node[0]))
+    for node_to_mark in list(cursor):
+        marked_nodes.add(node_to_mark[0])
+
+
+def get_height_of_node_by_id(node_to_put):
+    cursor.execute("SELECT * FROM Ci WHERE ID = " + str(node_to_put))
+    return get_height_of_node(list(cursor)[0])
 
 
 def insert_direct_generalization_of_node_in_queue(node, queue):
+    cursor.execute("SELECT Ei.end FROM Ci, Ei WHERE ID = Ei.start and ID = " + str(node[0]))
+    for node_to_put in list(cursor):
+        # node_to_put == (ID,) -.-
+        node_to_put = node_to_put[0]
+        queue.put_nowait((-get_height_of_node_by_id(node_to_put), node_to_put))
+
+
+def graph_generation(Si, Ei, i):
+    cursor.execute("ALTER TABLE Ci ADD COLUMN dim" + str(i) + " TEXT")
+    cursor.execute("ALTER TABLE Ci ADD COLUMN index" + str(i) + " INT")
+    connection.commit()
+    # TODO
+    cursor.execute("INSERT INTO Ei"
+                   "WITH CandidatesEdges(start,end) AS ("
+                   "SELECT p.ID, q.ID"
+                   "FROM Ci p,Ci q,Ei e,Ei f"
+                   "WHERE (e.start = p.parent1 and e.end = q.parent1"
+                   "and f.start = p.parent2 and f.end = q.parent2)"
+                   "or (e.start = p.parent1 and e.end = q.parent1"
+                   "and p.parent2 = q.parent2)"
+                   "or (e.start = p.parent2 and e.end = q.parent2"
+                   "and p.parent1 = q.parent1)"
+                   ")"
+                   "SELECT D.start, D.end"
+                   "FROM CandidateEdges D"
+                   "EXCEPT"
+                   "SELECT D1.start, D2.end"
+                   "FROM CandidateEdges D1, CandidateEdges D2"
+                   "WHERE D1.end = D2.start")
+    print(list(cursor))
     pass
 
 
-def graph_generation(Si, Ei):
-    pass
+def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
+    return len(frequency_set) < int(k)
 
 
-def basic_incognito_algorithm(cursor, priority_queue):
+def basic_incognito_algorithm(cursor, priority_queue, Q, k):
     init_C1_and_E1()
     queue = priority_queue
+    # marked_nodes = {(marked, node_ID)}
+    marked_nodes = set()
 
     for i in range(1, len(Q)):
         cursor.execute("SELECT * FROM Ci")
@@ -155,9 +203,7 @@ def basic_incognito_algorithm(cursor, priority_queue):
 
         for node in roots:
             # height = 0 because these nodes are roots
-            height = 0
-            marked = False
-            node = (marked, node)
+            height = get_height_of_node(node)
             # -height because priority queue shows the lowest first. Syntax: (priority number, data)
             roots_in_queue.add((-height, node))
 
@@ -166,29 +212,30 @@ def basic_incognito_algorithm(cursor, priority_queue):
 
         while not queue.empty():
             upgraded_node = queue.get_nowait()
-            # [1] => pick 'node' in (-height, node); [0] => pick 'marked' in (marked, node)
+            # [1] => pick 'node' in (-height, node);
             node = upgraded_node[1]
-            if not node[0]:
-                frequency_set = set()
+            if node not in marked_nodes:
                 if node in roots:
-                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T()
+                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(Q)
                 else:
-                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set()
-                if T_is_k_anonymous_wrt_attributes_of_node():
-                    mark_all_direct_generalizations_of_node()
+                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(frequency_set)
+                if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
+                    mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue)
         # Ci, Ei =
-        graph_generation(Si, Ei)
+        graph_generation(Si, Ei, i)
 
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Insert path and filename of QI and "
-                                                 "path and filename of dimension tables")
+    parser = argparse.ArgumentParser(description="Insert path and filename of QI, "
+                                                 "path and filename of dimension tables and"
+                                                 "k of k-anonymization")
     parser.add_argument("--quasi_identifiers", "-Q", required=True, type=str)
     parser.add_argument("--dimension_tables", "-D", required=True, type=str)
+    parser.add_argument("--k", "-k", required=True, type=str)
     args = parser.parse_args()
 
     connection = sqlite3.connect(":memory:")
@@ -207,12 +254,14 @@ if __name__ == "__main__":
     """
     dimension_tables = get_dimension_tables()
 
+    k = args.k
+
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
 
     create_tables_Ci_Ei()
 
     # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
-    basic_incognito_algorithm(cursor, queue.PriorityQueue())
+    basic_incognito_algorithm(cursor, queue.PriorityQueue(), Q, k)
 
     connection.close()
