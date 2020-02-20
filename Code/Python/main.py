@@ -2,11 +2,10 @@ import sqlite3
 import re
 import argparse
 import json
+import queue
 
 
-def prepare_table_to_be_k_anonymized():
-    cursor = connection.cursor()
-
+def prepare_table_to_be_k_anonymized(cursor):
     attributes = list()
     path_to_datasets = "../datasets/"
     # get attributes from adult.names
@@ -67,25 +66,104 @@ def get_dimension_tables():
     return json.loads(json_text)
 
 
-parser = argparse.ArgumentParser(description="Insert path and filename of QI and "
-                                             "path and filename of dimension tables")
-parser.add_argument("--quasi_identifiers", "-Q", required=True, type=str)
-parser.add_argument("--dimension_tables", "-D", required=True, type=str)
-args = parser.parse_args()
+def get_parent_index_C1(index, parent1_or_parent2):
+    parent_index = index - parent1_or_parent2
+    if parent_index < 0:
+        parent_index = "null"
+    return parent_index
 
-connection = sqlite3.connect(":memory:")
 
-prepare_table_to_be_k_anonymized()
+def init_C1_and_E1():
+    id = 1
+    for dimension in dimension_tables:
+        index = 0
+        for node in dimension_tables[dimension]:
+            # parenty = index - y
+            parent1 = get_parent_index_C1(index, 1)
+            parent2 = get_parent_index_C1(index, 2)
+            tupla = (id, node, index, parent1, parent2)
+            cursor.execute("INSERT INTO Ci values (?, ?, ?, ?, ?)", tupla)
+            if index >= 1:
+                cursor.execute("INSERT INTO Ei values (?, ?)", (id - 1, id))
+            id += 1
+            index += 1
+    connection.commit()
+    """
+    cursor.execute("SELECT * FROM Ci")
+    print(list(cursor))
+    cursor.execute("SELECT * FROM Ei")
+    print(list(cursor))
+    """
 
-# Q is a set containing the quasi-identifiers. eg:
-# <class 'set'>: {'age', 'occupation'}
-Q = get_quasi_identifiers()
 
-"""
- dimension_tables is a dictionary in which a single key is a specific QI and
- dimension_tables[QI] is the dimension table of QI. eg:
- <class 'dict'>: {'age': {'A0': [1, 2, 3], 'A1': [4, 5]}, 'occupation': {'O0': ['a', 'b', 'c'], 'O1': ['d', 'e'], 'O2': ['*']}}
-"""
-dimension_tables = get_dimension_tables()
+def create_tables_Ci_Ei():
+    # autoincrement id starts from 1 by default
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS Ci (ID INTEGER PRIMARY KEY, dim1 TEXT, index1 INT, parent1 INT, parent2 INT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Ei (start INT, end INT)")
+    connection.commit()
 
-connection.close()
+
+def get_height_of_node(node, Ci, Ei):
+    # TODO
+    pass
+
+
+def basic_incognito_algorithm(cursor, priority_queue):
+    init_C1_and_E1()
+    queue = priority_queue
+
+    for i in range(1, len(Q)):
+        cursor.execute("SELECT * FROM Ci")
+        Si = set(cursor)
+
+        #theese 3 lines for practicality
+        Ci = set(Si)
+        cursor.execute("SELECT * FROM Ei")
+        Ei = set(cursor)
+
+        # no edge directed to them ==== have no parent1 (and no parent2)
+        cursor.execute("SELECT * FROM Ci WHERE parent1='null' ")
+        roots = set(cursor)
+        roots_in_queue = set()
+        for node in roots:
+            height = get_height_of_node(node, Ci, Ei)
+            # -height because priority queue shows the lowest first
+            roots_in_queue.add((-height, node))
+        for node in roots_in_queue:
+            queue.put(node)
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Insert path and filename of QI and "
+                                                 "path and filename of dimension tables")
+    parser.add_argument("--quasi_identifiers", "-Q", required=True, type=str)
+    parser.add_argument("--dimension_tables", "-D", required=True, type=str)
+    args = parser.parse_args()
+
+    connection = sqlite3.connect(":memory:")
+    cursor = connection.cursor()
+
+    prepare_table_to_be_k_anonymized(cursor)
+
+    # Q is a set containing the quasi-identifiers. eg:
+    # <class 'set'>: {'age', 'occupation'}
+    Q = get_quasi_identifiers()
+
+    """
+     dimension_tables is a dictionary in which a single key is a specific QI and
+     dimension_tables[QI] is the dimension table of QI. eg:
+     <class 'dict'>: {'age': {'A0': [1, 2, 3], 'A1': [4, 5]}, 'occupation': {'O0': ['a', 'b', 'c'], 'O1': ['d', 'e'], 'O2': ['*']}}
+    """
+    dimension_tables = get_dimension_tables()
+
+    # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
+    # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
+
+    create_tables_Ci_Ei()
+
+    # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
+    basic_incognito_algorithm(cursor, queue.PriorityQueue())
+
+    connection.close()
