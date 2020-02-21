@@ -124,7 +124,9 @@ def get_height_of_node(node):
     return height
 
 
-def frequency_set_of_T_wrt_attributes_of_node_using_T(Q):
+def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
+    # for mia_zia in dimension_tables:
+
     cursor.execute("SELECT COUNT(*) FROM AdultData GROUP BY " + ', '.join(Q))
     freq_set = list()
     for count in list(cursor):
@@ -132,8 +134,11 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(Q):
     return freq_set
 
 
-def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(frequency_set):
-    # TODO
+def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, frequency_set):
+    cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ei.start = " + node[0] + " and Ci.ID = Ei.start")
+    parent_node = list(cursor)[0]
+    cursor.execute
+
     return frequency_set
 
 
@@ -304,14 +309,16 @@ def basic_incognito_algorithm(priority_queue, Q, k):
             node = upgraded_node[1]
             if node not in marked_nodes:
                 if node in roots:
-                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(Q)
+                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q)
                 else:
-                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(frequency_set)
+                    frequency_set = \
+                        frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, frequency_set)
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
                     mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue)
+
         graph_generation(Ci, Si, Ei, i)
 
 
