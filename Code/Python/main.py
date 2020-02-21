@@ -129,9 +129,9 @@ def get_height_of_node(node):
 
 
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
-    # TODO: get the correct frequency set given the node's level of generalization for each considered QI.
+    # IGNORE --- TODO: get the correct frequency set given the node's level of generalization for each considered QI.
     #  This might need the generalization of the table, followed by "SELECT COUNT(*) FROM GeneralizedTable GROUP
-    #  BY " + ', '.join(Q), where Q is the group of considered QI
+    #  BY " + ', '.join(Q), where Q is the group of considered QI --- IGNORE
     cursor.execute("SELECT COUNT(*) FROM AdultData GROUP BY " + ', '.join(Q))
     freq_set = list()
     for count in list(cursor):
