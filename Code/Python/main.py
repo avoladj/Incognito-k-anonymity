@@ -1,4 +1,4 @@
-import sqlite3
+from pysqlite3 import dbapi2 as sqlite3
 import re
 import argparse
 import json
@@ -100,6 +100,7 @@ def init_C1_and_E1():
 def create_tables_Ci_Ei():
     # Ci initally has only one pair dimx, indexx, which will increment if k-anonymity is not achieved
     # autoincrement id starts from 1 by default
+    # parent1 == [3], parent2 == [4]
     cursor.execute(
         "CREATE TABLE IF NOT EXISTS Ci (ID INTEGER PRIMARY KEY, dim1 TEXT, index1 INT, parent1 INT, parent2 INT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS Ei (start INT, end INT)")
@@ -156,30 +157,78 @@ def insert_direct_generalization_of_node_in_queue(node, queue):
         queue.put_nowait((-get_height_of_node(node), node))
 
 
-def graph_generation(Si, Ei, i):
-    cursor.execute("ALTER TABLE Ci ADD COLUMN dim" + str(i) + " TEXT")
-    cursor.execute("ALTER TABLE Ci ADD COLUMN index" + str(i) + " INT")
+def graph_generation(Ci, Si, Ei, i):
+    i_here = i+1
+    # to create Si i need all columnnames of Ci
+    # PRAGMA returns infos like (0, 'ID', 'INTEGER', 0, None, 1), (1, 'dim1', 'TEXT', 0, None, 0), ...
+    cursor.execute("PRAGMA table_info(Ci)")
+    column_infos = list()
+    column_infos_from_db = list(cursor)
+    for column in column_infos_from_db:
+        column_infos.append(str(column[1]) + " " + str(column[2]))
+    cursor.execute("CREATE TEMPORARY TABLE Si (" + ', '.join(column_infos) + ")")
     connection.commit()
-    # TODO
+    question_marks = ""
+    for j in range(0, len(column_infos_from_db) - 1):
+        question_marks += " ?,"
+    question_marks += " ? "
+    cursor.executemany("INSERT INTO Si values (" + question_marks + ")", Si)
+
+    cursor.execute("ALTER TABLE Ci ADD COLUMN dim" + str(i_here) + " TEXT")
+    cursor.execute("ALTER TABLE Ci ADD COLUMN index" + str(i_here) + " INT")
+    connection.commit()
+
+    """
+    cursor.execute("SELECT * FROM Si")
+    print(list(cursor))
+    """
+
+    help_me = ""
+    help_me_now = ""
+    # j starts from 1, but here the indexes of 'dim' and 'index' are 2 => j = 2, indexes = 3 ...
+    for j in range(1, i_here):
+        indexes = j + 1
+        if indexes == i_here:
+            str_j = str(j)
+            help_me += ", q.dim" + str_j + ", q.index" + str_j
+            help_me_now += "and p.dim" + str_j + " < q.dim" + str_j
+        else:
+            str_j = str(indexes)
+            help_me += ", p.dim" + str_j + ", p.index" + str_j
+            help_me_now += "and p.dim" + str_j + " = q.dim" + str_j + " and p.index" + str_j + " = q.index" + str_j
+
+    # join phase. Ci == Ci+1
+    cursor.execute("INSERT INTO Ci "
+                   "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
+                   "FROM Si p, Si q "
+                   "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
+
+    # prune phase
+    for c in Ci:
+        for s in subsets(i, c):
+            # TODO
+            cursor.execute("IF " + s + " IN Si "
+                           "DELETE FROM Ci WHERE Ci.ID = " + str(c[0]))
+
+
+    # edge generation
     cursor.execute("INSERT INTO Ei "
                    "WITH CandidatesEdges(start, end) AS ("
-                   "SELECT p.ID, q.ID"
-                   "FROM Ci as p,Ci as q,Ei as e,Ei as f"
-                   "WHERE (e.start = p.parent1 and e.end = q.parent1"
-                   "and f.start = p.parent2 and f.end = q.parent2)"
-                   "or (e.start = p.parent1 and e.end = q.parent1"
-                   "and p.parent2 = q.parent2)"
-                   "or (e.start = p.parent2 and e.end = q.parent2"
-                   "and p.parent1 = q.parent1)"
-                   ")"
-                   "SELECT D.start, D.end"
-                   "FROM CandidateEdges as D"
-                   "EXCEPT"
-                   "SELECT D1.start, D2.end"
-                   "FROM CandidateEdges as D1, CandidateEdges as D2"
+                   "SELECT p.ID, q.ID "
+                   "FROM Ci p,Ci q,Ei e,Ei f "
+                   "WHERE (e.start = p.parent1 and e.end = q.parent1 "
+                   "and f.start = p.parent2 and f.end = q.parent2) "
+                   "or (e.start = p.parent1 and e.end = q.parent1 "
+                   "and p.parent2 = q.parent2) "
+                   "or (e.start = p.parent2 and e.end = q.parent2 "
+                   "and p.parent1 = q.parent1) "
+                   ") "
+                   "SELECT D.start, D.end "
+                   "FROM CandidatesEdges D "
+                   "EXCEPT "
+                   "SELECT D1.start, D2.end "
+                   "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
-    print(list(cursor))
-    pass
 
 
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
@@ -230,7 +279,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue)
         # Ci, Ei =
-        graph_generation(Si, Ei, i+1)
+        graph_generation(Ci, Si, Ei, i)
 
 
 if __name__ == "__main__":
