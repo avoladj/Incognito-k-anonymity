@@ -326,6 +326,19 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables():
     pass
 
 
+class Node:
+
+    id = 0
+    dims_and_indexes = list()
+    parent1 = 0
+    parent2 = 0
+
+    frequency_set = set()
+    height = 0
+
+    next_node_ids = list()
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Insert path and filename of QI, "
@@ -368,3 +381,4 @@ if __name__ == "__main__":
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables()
 
     connection.close()
+
