@@ -4,6 +4,8 @@ import argparse
 import json
 import queue
 
+from sympy import subsets
+
 
 def prepare_table_to_be_k_anonymized(cursor):
     attributes = list()
@@ -113,7 +115,7 @@ def get_height_of_node(node):
     height = 0
     length = len(node)
     while True:
-        # 2+5*0, 2+5*1, 2+10*2, ...
+        # 2+5*0, 2+5*1, 2+5*2, ...
         j = 2 + 5*i
         if j >= length:
             break
@@ -157,6 +159,22 @@ def insert_direct_generalization_of_node_in_queue(node, queue):
         queue.put_nowait((-get_height_of_node(node), node))
 
 
+def all_subsets(c, i):
+    my_set = set()
+    # extract only the ids
+    p = 0
+    length = len(c)
+    while True:
+        # 0+7*0, 0+7*1, 0+7*2, ...
+        j = 7*p
+        if j >= length:
+            break
+        my_set.add(c[j])
+        p += 1
+    return subsets(my_set, i)
+
+
+
 def graph_generation(Ci, Si, Ei, i):
     i_here = i+1
     # to create Si i need all columnnames of Ci
@@ -174,14 +192,12 @@ def graph_generation(Ci, Si, Ei, i):
     question_marks += " ? "
     cursor.executemany("INSERT INTO Si values (" + question_marks + ")", Si)
 
+    cursor.execute("SELECT * FROM Si")
+    Si_new = set(cursor)
+
     cursor.execute("ALTER TABLE Ci ADD COLUMN dim" + str(i_here) + " TEXT")
     cursor.execute("ALTER TABLE Ci ADD COLUMN index" + str(i_here) + " INT")
     connection.commit()
-
-    """
-    cursor.execute("SELECT * FROM Si")
-    print(list(cursor))
-    """
 
     help_me = ""
     help_me_now = ""
@@ -203,13 +219,27 @@ def graph_generation(Ci, Si, Ei, i):
                    "FROM Si p, Si q "
                    "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
 
-    # prune phase
-    for c in Ci:
-        for s in subsets(i, c):
-            # TODO
-            cursor.execute("IF " + s + " IN Si "
-                           "DELETE FROM Ci WHERE Ci.ID = " + str(c[0]))
+    cursor.execute("SELECT * FROM Ci")
+    Ci_new = set(cursor)
 
+    Ci_map = dict()
+    for c in Ci:
+        keys = list()
+        t = 0
+        length = len(c)
+        while True:
+            r = 7 * t
+            if r >= length:
+                break
+            keys.append(c[r])
+            t += 1
+        Ci_map[tuple(keys)] = c
+
+    # prune phase
+    for c in Ci_new:
+        for s in all_subsets(c, i):
+            if Ci_map[s] not in Si_new:
+                cursor.execute("DELETE FROM Ci WHERE Ci.ID = " + str(c[0]))
 
     # edge generation
     cursor.execute("INSERT INTO Ei "
@@ -229,6 +259,10 @@ def graph_generation(Ci, Si, Ei, i):
                    "SELECT D1.start, D2.end "
                    "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
+
+    if i != len(Q) - 1:
+        cursor.execute("DROP TABLE Si")
+        connection.commit()
 
 
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
@@ -278,8 +312,11 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                 else:
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue)
-        # Ci, Ei =
         graph_generation(Ci, Si, Ei, i)
+
+
+def projection_of_attributes_of_Sn_onto_T_and_dimension_tables():
+    pass
 
 
 if __name__ == "__main__":
@@ -317,5 +354,10 @@ if __name__ == "__main__":
 
     # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
     basic_incognito_algorithm(queue.PriorityQueue(), Q, k)
+
+    cursor.execute("SELECT * FROM Si")
+    print(list(cursor))
+
+    projection_of_attributes_of_Sn_onto_T_and_dimension_tables()
 
     connection.close()
