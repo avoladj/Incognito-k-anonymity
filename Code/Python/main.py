@@ -61,6 +61,10 @@ def get_quasi_identifiers():
 
 
 def get_dimension_tables():
+    # TODO: create the SQL tables for each dimension table. It PROBABLY should look like this:
+    #  one column per level (e.g. 0, 1, 2) and one row per element (e.g. one row for age 18,
+    #  one for age 19, one for 20, etc.) so that each row is something like this: 18  10  0
+
     json_text = ""
     with open(args.dimension_tables, "r") as dimension_tables_filename:
         for line in dimension_tables_filename:
@@ -125,21 +129,34 @@ def get_height_of_node(node):
 
 
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
-    # for mia_zia in dimension_tables:
-
+    # TODO: get the correct frequency set given the node's level of generalization for each considered QI.
+    #  This might need the generalization of the table, followed by "SELECT COUNT(*) FROM GeneralizedTable GROUP
+    #  BY " + ', '.join(Q), where Q is the group of considered QI
     cursor.execute("SELECT COUNT(*) FROM AdultData GROUP BY " + ', '.join(Q))
     freq_set = list()
     for count in list(cursor):
         freq_set.append(count[0])
+    node.frequency_set = freq_set
     return freq_set
 
 
-def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, frequency_set):
-    cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ei.start = " + node[0] + " and Ci.ID = Ei.start")
-    parent_node = list(cursor)[0]
-    cursor.execute
+def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, Q):
+    parent_node = node.parent1
 
-    return frequency_set
+    # find which QI has changed compared to the parent (==> index has increased)
+    changed_qi = ""
+    for qi in node.dims_and_indexes:
+        if node.dims_and_indexes[qi] > parent_node.dims_and_indexes[qi]:
+            changed_qi = qi
+
+    # join the parent's frequency_set with the changed QI's dimension table
+    # TODO: get the parent's frequency_set SQL table, and get the SQL table for the dimension table
+    #  of the QI that has increased.
+    #  Then compute their JOIN
+    #  Then we have to do a SUM(count) query with the considered QIs in the GROUP BY clause.
+    #  (What is count?)
+
+    return freq_set
 
 
 def mark_all_direct_generalizations_of_node(marked_nodes, node):
@@ -311,8 +328,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q)
                 else:
-                    frequency_set = \
-                        frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, frequency_set)
+                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, Q)
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
                     mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
@@ -329,7 +345,7 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables():
 class Node:
 
     id = 0
-    dims_and_indexes = list()
+    dims_and_indexes = dict()
     parent1 = 0
     parent2 = 0
 
@@ -361,7 +377,7 @@ if __name__ == "__main__":
     """
      dimension_tables is a dictionary in which a single key is a specific QI and
      dimension_tables[QI] is the dimension table of QI. eg:
-     <class 'dict'>: {'age': {'A0': [1, 2, 3], 'A1': [4, 5]}, 'occupation': {'O0': ['a', 'b', 'c'], 'O1': ['d', 'e'], 'O2': ['*']}}
+     <class 'dict'>: {'age': {'0': [1, 2, 3], '1': [4, 5]}, 'occupation': {'0': ['a', 'b', 'c'], '1': ['d', 'e'], '2': ['*']}}
     """
     dimension_tables = get_dimension_tables()
 
