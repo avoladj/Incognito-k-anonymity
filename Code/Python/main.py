@@ -61,15 +61,48 @@ def get_quasi_identifiers():
 
 
 def get_dimension_tables():
-    # TODO: create the SQL tables for each dimension table. It PROBABLY should look like this:
-    #  one column per level (e.g. 0, 1, 2) and one row per element (e.g. one row for age 18,
-    #  one for age 19, one for 20, etc.) so that each row is something like this: 18  10  0
-
     json_text = ""
     with open(args.dimension_tables, "r") as dimension_tables_filename:
         for line in dimension_tables_filename:
             json_text += line.strip()
     return json.loads(json_text)
+
+def create_dimension_tables(tables):
+    for qi in tables:
+
+        # create SQL table
+        columns = list()
+        for i in tables[qi]:
+            if i == "type":
+                continue
+            columns.append("'" + i + "' " + tables[qi]["type"])
+        cursor.execute("CREATE TABLE IF NOT EXISTS " + qi + " (" + ", ".join(columns) + ")")
+        connection.commit()
+
+        # insert values into the newly created table
+        rows = list()
+        if tables[qi]["type"] == "text":
+            for i in range(len(tables[qi]["1"])):
+                row = "("
+                for j in tables[qi]:
+                    if j == "type":
+                        continue
+                    row += "'" + str(tables[qi][j][i]) + "', "
+                row = row[:-2] + ")"
+                rows.append(row)
+            cursor.execute("INSERT INTO " + qi + " VALUES " + ", ".join(rows))
+            connection.commit()
+        else:
+            for i in range(len(tables[qi]["1"])):
+                row = "("
+                for j in tables[qi]:
+                    if j == "type":
+                        continue
+                    row += str(tables[qi][j][i]) + ", "
+                row = row[:-2] + ")"
+                rows.append(row)
+            cursor.execute("INSERT INTO " + qi + " VALUES " + ", ".join(rows))
+            connection.commit()
 
 
 def get_parent_index_C1(index, parent1_or_parent2):
@@ -129,9 +162,6 @@ def get_height_of_node(node):
 
 
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
-    # IGNORE --- TODO: get the correct frequency set given the node's level of generalization for each considered QI.
-    #  This might need the generalization of the table, followed by "SELECT COUNT(*) FROM GeneralizedTable GROUP
-    #  BY " + ', '.join(Q), where Q is the group of considered QI --- IGNORE
     cursor.execute("SELECT COUNT(*) FROM AdultData GROUP BY " + ', '.join(Q))
     freq_set = list()
     for count in list(cursor):
@@ -149,12 +179,8 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node,
         if node.dims_and_indexes[qi] > parent_node.dims_and_indexes[qi]:
             changed_qi = qi
 
-    # join the parent's frequency_set with the changed QI's dimension table
-    # TODO: get the parent's frequency_set SQL table, and get the SQL table for the dimension table
-    #  of the QI that has increased.
-    #  Then compute their JOIN
-    #  Then we have to do a SUM(count) query with the considered QIs in the GROUP BY clause.
-    #  (What is count?)
+    # create a temporary SQL table with the generalized QI
+    # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN ")
 
     return freq_set
 
@@ -375,11 +401,14 @@ if __name__ == "__main__":
     Q = get_quasi_identifiers()
 
     """
-     dimension_tables is a dictionary in which a single key is a specific QI and
+     dimension_tables is a dictionary in which a single key is a specific QI (except the first that indicates the type) and
      dimension_tables[QI] is the dimension table of QI. eg:
      <class 'dict'>: {'age': {'0': [1, 2, 3], '1': [4, 5]}, 'occupation': {'0': ['a', 'b', 'c'], '1': ['d', 'e'], '2': ['*']}}
     """
     dimension_tables = get_dimension_tables()
+
+    # create dimension SQL tables
+    create_dimension_tables(dimension_tables)
 
     k = args.k
 
