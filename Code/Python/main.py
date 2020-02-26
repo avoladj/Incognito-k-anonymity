@@ -76,7 +76,7 @@ def create_dimension_tables(tables):
             if i == "type":
                 continue
             columns.append("'" + i + "' " + tables[qi]["type"])
-        cursor.execute("CREATE TABLE IF NOT EXISTS " + qi + " (" + ", ".join(columns) + ")")
+        cursor.execute("CREATE TABLE IF NOT EXISTS " + qi + "_dim (" + ", ".join(columns) + ")")
         connection.commit()
 
         # insert values into the newly created table
@@ -90,7 +90,7 @@ def create_dimension_tables(tables):
                     row += "'" + str(tables[qi][j][i]) + "', "
                 row = row[:-2] + ")"
                 rows.append(row)
-            cursor.execute("INSERT INTO " + qi + " VALUES " + ", ".join(rows))
+            cursor.execute("INSERT INTO " + qi + "_dim VALUES " + ", ".join(rows))
             connection.commit()
         else:
             for i in range(len(tables[qi]["1"])):
@@ -101,7 +101,7 @@ def create_dimension_tables(tables):
                     row += str(tables[qi][j][i]) + ", "
                 row = row[:-2] + ")"
                 rows.append(row)
-            cursor.execute("INSERT INTO " + qi + " VALUES " + ", ".join(rows))
+            cursor.execute("INSERT INTO " + qi + "_dim VALUES " + ", ".join(rows))
             connection.commit()
 
 
@@ -162,7 +162,7 @@ def get_height_of_node(node):
 
 
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
-    cursor.execute("SELECT COUNT(*) FROM AdultData GROUP BY " + ', '.join(Q))
+    cursor.execute("SELECT COUNT(*), " + ', '.join(Q) + " FROM AdultData GROUP BY " + ', '.join(Q))
     freq_set = list()
     for count in list(cursor):
         freq_set.append(count[0])
@@ -180,7 +180,7 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node,
             changed_qi = qi
 
     # create a temporary SQL table with the generalized QI
-    # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN ")
+    # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
 
     return freq_set
 
