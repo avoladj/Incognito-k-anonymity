@@ -218,31 +218,48 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
                 ...
     """
     cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ei.start = Ci.ID and Ei.end = " + str(node[0]))
+    parent_nodes = list(cursor)
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
 
-    for parent_node in list(cursor):
+    changed_qis = list()
+
+    for parent_node in parent_nodes:
         dims_and_indexes_s_parent_node = get_dims_and_indexes_of_node(parent_node)
 
         for i in range(len(dims_and_indexes_s_node)):
             if dims_and_indexes_s_node[i] > dims_and_indexes_s_parent_node[i]:
-                changed_qi = dims_and_indexes_s_node
+                changed_qis.append(dims_and_indexes_s_node[i])
 
-        # TODO
-        # create a temporary SQL table with the generalized QI
-        # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
+    cursor.execute("PRAGMA table_info(Ci)")
+    column_infos = list()
+    column_infos_from_db = list(cursor)
+    for column in column_infos_from_db:
+        column_infos.append(str(column[1]) + " " + str(column[2]))
+    cursor.execute("CREATE TEMPORARY TABLE TempTable (" + ', '.join(column_infos) + ")")
+    connection.commit()
+    cursor.execute("INSERT INTO TempTable SELECT * FROM Ci")
 
-        """
-        # parent_node = node.parent1
+    for i in range(len(changed_qis)):
+        column_name = changed_qis[i][0]
+        cursor.execute("ALTER TABLE TempTable ADD COLUMN " + column_name + str(changed_qis[i][1]) + " " +
+                       dimension_tables[column_name]['type'])
+        # TODO aggiungere i valori al nuovo 'age1' quindi Ci = TempTable senza la vecchia 'age' e
+        #  con 'age1' rinominato a 'age'
+    # create a temporary SQL table with the generalized QI
+    # cursor.execute("SELECT * INTO TempTable FROM AdultData JOIN " + qi +"_dim ON ")
 
-        # find which QI has changed compared to the parent (==> index has increased)
-        changed_qi = ""
-        for qi in node.dims_and_indexes:
-            if node.dims_and_indexes[qi] > parent_node.dims_and_indexes[qi]:
-                changed_qi = qi
+    """
+    # parent_node = node.parent1
 
-        # create a temporary SQL table with the generalized QI
-        # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
-        """
+    # find which QI has changed compared to the parent (==> index has increased)
+    changed_qi = ""
+    for qi in node.dims_and_indexes:
+        if node.dims_and_indexes[qi] > parent_node.dims_and_indexes[qi]:
+            changed_qi = qi
+
+    # create a temporary SQL table with the generalized QI
+    # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
+    """
     return freq_set
 
 
