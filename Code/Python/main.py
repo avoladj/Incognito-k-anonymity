@@ -67,6 +67,7 @@ def get_dimension_tables():
             json_text += line.strip()
     return json.loads(json_text)
 
+
 def create_dimension_tables(tables):
     for qi in tables:
 
@@ -117,23 +118,25 @@ def init_C1_and_E1():
     for dimension in dimension_tables:
         index = 0
         for node in dimension_tables[dimension]:
+            if str(node) == 'type':
+                continue
             # parenty = index - y
             # parent2 is the parent of parent1
             parent1 = get_parent_index_C1(index, 1)
             parent2 = get_parent_index_C1(index, 2)
-            tuple = (id, node, index, parent1, parent2)
+            tuple = (id, dimension, index, parent1, parent2)
             cursor.execute("INSERT INTO Ci values (?, ?, ?, ?, ?)", tuple)
             if index >= 1:
                 cursor.execute("INSERT INTO Ei values (?, ?)", (id - 1, id))
             id += 1
             index += 1
     connection.commit()
-    """
+
     cursor.execute("SELECT * FROM Ci")
     print(list(cursor))
     cursor.execute("SELECT * FROM Ei")
     print(list(cursor))
-    """
+
 
 
 def create_tables_Ci_Ei():
@@ -161,27 +164,85 @@ def get_height_of_node(node):
     return height
 
 
+def get_dimensions_of_node(node):
+    dimensions_temp = set()
+    i = 0
+    length = len(node)
+    while True:
+        # 1+5*0, 1+5*1, 1+5*2, ...
+        j = 1 + 5*i
+        if j >= length:
+            break
+        dimensions_temp.add(node[j])
+        i += 1
+    return dimensions_temp
+
+
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
-    cursor.execute("SELECT COUNT(*), " + ', '.join(Q) + " FROM AdultData GROUP BY " + ', '.join(Q))
+    attributes = get_dimensions_of_node(node)
+    print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
+    cursor.execute("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
     freq_set = list()
     for count in list(cursor):
         freq_set.append(count[0])
-    node.frequency_set = freq_set
+    # node.frequency_set = freq_set
     return freq_set
 
 
-def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, Q):
-    parent_node = node.parent1
+def get_dims_and_indexes_of_node(node):
+    list_temp = list()
+    i = 0
+    length = len(node)
+    while True:
+        # dims = 1+5*0, 1+5*1, 1+5*2, ...
+        # indexes = 2+5*0, 2+5*1, 2+5*2, ... = dims + 1
+        j = 1 + 5*i
+        if j >= length:
+            break
+        list_temp.append((node[j], node[j+1]))
+        i += 1
+    return list_temp
 
-    # find which QI has changed compared to the parent (==> index has increased)
-    changed_qi = ""
-    for qi in node.dims_and_indexes:
-        if node.dims_and_indexes[qi] > parent_node.dims_and_indexes[qi]:
-            changed_qi = qi
 
-    # create a temporary SQL table with the generalized QI
-    # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
+def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, map_frequency_set, node, Q):
 
+    freq_set = set()
+
+    """
+    for edge in Ei:
+        if node[0] == edge[1]:
+            node_parent = edge[0]
+            parent_s_freq_set = map_frequency_set[node_parent]
+            for count in parent_s_freq_set:
+                freq_set.add(count + ... )
+                ...
+    """
+    cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ei.start = Ci.ID and Ei.end = " + str(node[0]))
+    dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
+
+    for parent_node in list(cursor):
+        dims_and_indexes_s_parent_node = get_dims_and_indexes_of_node(parent_node)
+
+        for i in range(len(dims_and_indexes_s_node)):
+            if dims_and_indexes_s_node[i] > dims_and_indexes_s_parent_node[i]:
+                changed_qi = dims_and_indexes_s_node
+
+        # TODO
+        # create a temporary SQL table with the generalized QI
+        # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
+
+        """
+        # parent_node = node.parent1
+
+        # find which QI has changed compared to the parent (==> index has increased)
+        changed_qi = ""
+        for qi in node.dims_and_indexes:
+            if node.dims_and_indexes[qi] > parent_node.dims_and_indexes[qi]:
+                changed_qi = qi
+
+        # create a temporary SQL table with the generalized QI
+        # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
+        """
     return freq_set
 
 
@@ -314,7 +375,14 @@ def graph_generation(Ci, Si, Ei, i):
 
 
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
-    return len(frequency_set) < int(k)
+    """
+    Relation T is said to satisfy the k-anonymity property (or to be k-anonymous) with respect to attribute set A if
+    every count in the frequency set of T with respect to A is greater than or equal to k
+    """
+    for count in frequency_set:
+        if count < k:
+            return False
+    return True
 
 
 def basic_incognito_algorithm(priority_queue, Q, k):
@@ -322,6 +390,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
     queue = priority_queue
     # marked_nodes = {(marked, node_ID)}
     marked_nodes = set()
+    map_node_frequency_set = dict()
 
     for i in range(1, len(Q)):
         cursor.execute("SELECT * FROM Ci")
@@ -353,8 +422,11 @@ def basic_incognito_algorithm(priority_queue, Q, k):
             if node not in marked_nodes:
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q)
+                    map_node_frequency_set[node] = frequency_set
                 else:
-                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, Q)
+                    frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(
+                        Ei, map_node_frequency_set, node, Q)
+                    map_node_frequency_set[node] = frequency_set
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
                     mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
@@ -410,7 +482,7 @@ if __name__ == "__main__":
     # create dimension SQL tables
     create_dimension_tables(dimension_tables)
 
-    k = args.k
+    k = int(args.k)
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
