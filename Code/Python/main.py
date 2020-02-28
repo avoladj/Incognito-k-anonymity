@@ -206,17 +206,6 @@ def get_dims_and_indexes_of_node(node):
 
 def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, map_frequency_set, node, Q):
 
-    freq_set = set()
-
-    """
-    for edge in Ei:
-        if node[0] == edge[1]:
-            node_parent = edge[0]
-            parent_s_freq_set = map_frequency_set[node_parent]
-            for count in parent_s_freq_set:
-                freq_set.add(count + ... )
-                ...
-    """
     cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ei.start = Ci.ID and Ei.end = " + str(node[0]))
     parent_nodes = list(cursor)
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
@@ -230,36 +219,77 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
             if dims_and_indexes_s_node[i] > dims_and_indexes_s_parent_node[i]:
                 changed_qis.append(dims_and_indexes_s_node[i])
 
-    cursor.execute("PRAGMA table_info(Ci)")
-    column_infos = list()
-    column_infos_from_db = list(cursor)
-    for column in column_infos_from_db:
-        column_infos.append(str(column[1]) + " " + str(column[2]))
-    cursor.execute("CREATE TEMPORARY TABLE TempTable (" + ', '.join(column_infos) + ")")
+    attributes = get_dimensions_of_node(node)
+    cursor.execute("CREATE TEMPORARY TABLE TempTable (count INT, " + ', '.join(attributes) + ")")
     connection.commit()
-    cursor.execute("INSERT INTO TempTable SELECT * FROM Ci")
+    cursor.execute("INSERT INTO TempTable SELECT COUNT(*), " + ', '.join(attributes) +
+                   " FROM AdultData GROUP BY " + ', '.join(attributes))
+
+    cursor.execute("SELECT * FROM TempTable")
+    print(list(cursor))
+
+    # SELECT COUNT(*), age FROM AdultData GROUP BY age
+    # prendere la colonna 'age'
+    # generalizzo ogni valore rispetto 'age' changed_qis[i][1]
+    # creo JoinedTable con 'age1' con colonna generalizzata
+    # SELECT SUM(COUNT) FROM JoinedTable GROUP BY age1
+
+    new_columns = dict()
 
     for i in range(len(changed_qis)):
+
         column_name = changed_qis[i][0]
-        cursor.execute("ALTER TABLE TempTable ADD COLUMN " + column_name + str(changed_qis[i][1]) + " " +
-                       dimension_tables[column_name]['type'])
-        # TODO aggiungere i valori al nuovo 'age1' quindi Ci = TempTable senza la vecchia 'age' e
-        #  con 'age1' rinominato a 'age'
-    # create a temporary SQL table with the generalized QI
-    # cursor.execute("SELECT * INTO TempTable FROM AdultData JOIN " + qi +"_dim ON ")
+        generalization_level = changed_qis[i][1]
+        generalization_level_str = str(generalization_level)
 
-    """
-    # parent_node = node.parent1
+        cursor.execute("SELECT " + column_name + " FROM TempTable")
+        column_values = list(cursor)
+        generalization_values = sorted(dimension_tables[column_name][generalization_level_str], reverse=True)
 
-    # find which QI has changed compared to the parent (==> index has increased)
-    changed_qi = ""
-    for qi in node.dims_and_indexes:
-        if node.dims_and_indexes[qi] > parent_node.dims_and_indexes[qi]:
-            changed_qi = qi
+        new_column_values = list()
 
-    # create a temporary SQL table with the generalized QI
-    # cursor.execute("SELECT * INTO tempTable FROM AdultData JOIN " + qi +"_dim ON ")
-    """
+        for j in range(len(column_values)):
+            column_value = column_values[j][0]
+            candidate_new_column_value = column_value
+            for p in range(len(generalization_values)):
+                generalization_value = generalization_values[p]
+                if type(column_value) == float or type(column_value) == int:
+                    if column_value < generalization_value:
+                        candidate_new_column_value = generalization_value
+                elif type(column_value) == str:
+                    candidate_new_column_value = generalization_value
+            new_column_values.append(candidate_new_column_value)
+
+        new_columns[column_name] = new_column_values
+
+        print(column_values)
+        print(new_column_values)
+
+    cursor.execute("CREATE TEMPORARY TABLE JoinedTable (count INT, " + ', '.join(attributes) + ")")
+    connection.commit()
+    cursor.execute("SELECT * FROM TempTable")
+    temp_table_values = list(cursor)
+
+    question_marks = ""
+    for j in range(len(temp_table_values[0]) - 1):
+        question_marks += " ?,"
+    question_marks += " ? "
+
+    new_tuples = list()
+    for l in range(len(temp_table_values)):
+        new_tupla_from_list = list()
+        new_tupla_from_list.append(temp_table_values[l][0])
+        for dimension in attributes:
+            new_tupla_from_list.append(new_columns[dimension][l])
+        new_tuples.append(tuple(new_tupla_from_list))
+
+    cursor.executemany("INSERT INTO JoinedTable values (" + question_marks + ")", new_tuples)
+    cursor.execute("SELECT SUM(COUNT) FROM JoinedTable GROUP BY " + ', '.join(attributes))
+    freq_set = list(cursor)
+    cursor.execute("DROP TABLE TempTable")
+    cursor.execute("DROP TABLE JoinedTable")
+    connection.commit()
+
     return freq_set
 
 
@@ -397,6 +427,8 @@ def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
     every count in the frequency set of T with respect to A is greater than or equal to k
     """
     for count in frequency_set:
+        if type(count) == tuple:
+            count = count[0]
         if count < k:
             return False
     return True
