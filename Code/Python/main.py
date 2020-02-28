@@ -358,7 +358,16 @@ def graph_generation(Ci, Si, Ei, i):
             help_me += ", p.dim" + str_j + ", p.index" + str_j
             help_me_now += "and p.dim" + str_j + " = q.dim" + str_j + " and p.index" + str_j + " = q.index" + str_j
 
+    # TODO: fix the following scenario:
+    #  INSERT INTO Ci SELECT null, p.dim1, p.index1, p.ID, q.ID , q.dim1, q.index1 FROM Si p, Si q
+    #  WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim1 < q.dim1
+    #  How can p.dim1 be both = and < than q.dim1?
+
     # join phase. Ci == Ci+1
+    print("INSERT INTO Ci "
+                   "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
+                   "FROM Si p, Si q "
+                   "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
     cursor.execute("INSERT INTO Ci "
                    "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
                    "FROM Si p, Si q "
