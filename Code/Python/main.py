@@ -132,10 +132,12 @@ def init_C1_and_E1():
             index += 1
     connection.commit()
 
+    """
     cursor.execute("SELECT * FROM Ci")
     print(list(cursor))
     cursor.execute("SELECT * FROM Ei")
     print(list(cursor))
+    """
 
 
 
@@ -180,7 +182,7 @@ def get_dimensions_of_node(node):
 
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
     attributes = get_dimensions_of_node(node)
-    print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
+    #print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
     cursor.execute("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
     freq_set = list()
     for count in list(cursor):
@@ -240,28 +242,38 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
 
     for i in range(len(changed_qis)):
 
+        # todo elargire a piu' di un changed_qis e non solo uno
+
         column_name = changed_qis[i][0]
         generalization_level = changed_qis[i][1]
         generalization_level_str = str(generalization_level)
         previous_generalization_level_str = str(generalization_level - 1)
         dimension_table = column_name + "_dim"
+        dimension_with_previous_generalization_level = dimension_table + ".\"" + previous_generalization_level_str + "\""
 
         # cursor.execute("SELECT * INTO TempTable FROM AdultData JOIN " + qi +"_dim ON ")
 
+        group_by_attributes = set(attributes)
+        if column_name in attributes:
+            group_by_attributes.remove(column_name)
+            group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
+
         cursor.execute("INSERT INTO TempTable "
-                       "SELECT COUNT(*) as count, " + dimension_table + "\"" + generalization_level_str + "\""
-                       + " FROM AdultData, " + dimension_table +
-                       " WHERE AdultData." + column_name + " = " + column_name + "_dim.\"" +
-                       previous_generalization_level_str + "\" GROUP BY " + ','.join(attributes))
+                       "SELECT COUNT(*) as count, " + dimension_table + ".\"" + generalization_level_str + "\" AS " +
+                       column_name + " FROM AdultData, " + dimension_table +
+                       " WHERE AdultData." + column_name + " = " + dimension_with_previous_generalization_level +
+                       " GROUP BY " + ','.join(group_by_attributes))
 
-        # todo group by qids_not_changed, qids_changed
-
-        print(list(cursor))
         cursor.execute("SELECT * FROM TempTable")
-        print(cursor.fetchall())
+        #print(cursor.fetchall())
 
-    cursor.execute("SELECT SUM(COUNT) FROM TempTable GROUP BY " + ', '.join(attributes))
-    freq_set = list(cursor)
+    #print("SELECT SUM(count) FROM TempTable GROUP BY " + ', '.join(attributes))
+    cursor.execute("SELECT SUM(count) FROM TempTable GROUP BY " + ', '.join(attributes))
+    results = list(cursor)
+    freq_set = list()
+    for result in results:
+        freq_set.append(result[0])
+
     cursor.execute("DROP TABLE TempTable")
     connection.commit()
 
@@ -315,7 +327,9 @@ def graph_generation(Ci, Si, Ei, i):
     column_infos_from_db = list(cursor)
     for column in column_infos_from_db:
         column_infos.append(str(column[1]) + " " + str(column[2]))
-    cursor.execute("CREATE TEMPORARY TABLE Si (" + ', '.join(column_infos) + ")")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Si (" + ', '.join(column_infos) + ")")
+    global Si_created
+    Si_created = True
     connection.commit()
     question_marks = ""
     for j in range(0, len(column_infos_from_db) - 1):
@@ -443,7 +457,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
             upgraded_node = queue.get_nowait()
             # [1] => pick 'node' in (-height, node);
             node = upgraded_node[1]
-            if node not in marked_nodes:
+            if node[0] not in marked_nodes:
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q)
                     map_node_frequency_set[node] = frequency_set
@@ -455,6 +469,11 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
                     Si.remove(node)
+                    try:
+                        # todo non so se serve
+                        cursor.execute("DELETE FROM Si WHERE ID = " + str(node[0]))
+                    except:
+                        pass
                     insert_direct_generalization_of_node_in_queue(node, queue)
 
         graph_generation(Ci, Si, Ei, i)
