@@ -222,11 +222,13 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     attributes = get_dimensions_of_node(node)
     cursor.execute("CREATE TEMPORARY TABLE TempTable (count INT, " + ', '.join(attributes) + ")")
     connection.commit()
+    """
     cursor.execute("INSERT INTO TempTable SELECT COUNT(*), " + ', '.join(attributes) +
                    " FROM AdultData GROUP BY " + ', '.join(attributes))
 
     cursor.execute("SELECT * FROM TempTable")
     print(list(cursor))
+    """
 
     # SELECT COUNT(*), age FROM AdultData GROUP BY age
     # prendere la colonna 'age'
@@ -241,53 +243,26 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
         column_name = changed_qis[i][0]
         generalization_level = changed_qis[i][1]
         generalization_level_str = str(generalization_level)
+        previous_generalization_level_str = str(generalization_level - 1)
+        dimension_table = column_name + "_dim"
 
-        cursor.execute("SELECT " + column_name + " FROM TempTable")
-        column_values = list(cursor)
-        generalization_values = sorted(dimension_tables[column_name][generalization_level_str], reverse=True)
+        # cursor.execute("SELECT * INTO TempTable FROM AdultData JOIN " + qi +"_dim ON ")
 
-        new_column_values = list()
+        cursor.execute("INSERT INTO TempTable "
+                       "SELECT COUNT(*) as count, " + dimension_table + "\"" + generalization_level_str + "\""
+                       + " FROM AdultData, " + dimension_table +
+                       " WHERE AdultData." + column_name + " = " + column_name + "_dim.\"" +
+                       previous_generalization_level_str + "\" GROUP BY " + ','.join(attributes))
 
-        for j in range(len(column_values)):
-            column_value = column_values[j][0]
-            candidate_new_column_value = column_value
-            for p in range(len(generalization_values)):
-                generalization_value = generalization_values[p]
-                if type(column_value) == float or type(column_value) == int:
-                    if column_value < generalization_value:
-                        candidate_new_column_value = generalization_value
-                elif type(column_value) == str:
-                    candidate_new_column_value = generalization_value
-            new_column_values.append(candidate_new_column_value)
+        # todo group by qids_not_changed, qids_changed
 
-        new_columns[column_name] = new_column_values
+        print(list(cursor))
+        cursor.execute("SELECT * FROM TempTable")
+        print(cursor.fetchall())
 
-        print(column_values)
-        print(new_column_values)
-
-    cursor.execute("CREATE TEMPORARY TABLE JoinedTable (count INT, " + ', '.join(attributes) + ")")
-    connection.commit()
-    cursor.execute("SELECT * FROM TempTable")
-    temp_table_values = list(cursor)
-
-    question_marks = ""
-    for j in range(len(temp_table_values[0]) - 1):
-        question_marks += " ?,"
-    question_marks += " ? "
-
-    new_tuples = list()
-    for l in range(len(temp_table_values)):
-        new_tupla_from_list = list()
-        new_tupla_from_list.append(temp_table_values[l][0])
-        for dimension in attributes:
-            new_tupla_from_list.append(new_columns[dimension][l])
-        new_tuples.append(tuple(new_tupla_from_list))
-
-    cursor.executemany("INSERT INTO JoinedTable values (" + question_marks + ")", new_tuples)
-    cursor.execute("SELECT SUM(COUNT) FROM JoinedTable GROUP BY " + ', '.join(attributes))
+    cursor.execute("SELECT SUM(COUNT) FROM TempTable GROUP BY " + ', '.join(attributes))
     freq_set = list(cursor)
     cursor.execute("DROP TABLE TempTable")
-    cursor.execute("DROP TABLE JoinedTable")
     connection.commit()
 
     return freq_set
@@ -513,6 +488,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     connection = sqlite3.connect(":memory:")
+    #connection = sqlite3.connect("identifier.sqlite")
     cursor = connection.cursor()
 
     prepare_table_to_be_k_anonymized(cursor)
