@@ -8,7 +8,6 @@ from sympy import subsets
 
 
 def prepare_table_to_be_k_anonymized(cursor):
-    attributes = list()
     path_to_datasets = "../datasets/"
     # get attributes from adult.names
     with open(path_to_datasets + "adult.names", "r") as adult_names:
@@ -518,7 +517,43 @@ def basic_incognito_algorithm(priority_queue, Q, k):
 
 
 def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
-    pass
+    # get node with lowest ID, as it should be the least "generalized" one that makes the table k-anonymous
+    # TODO: is it really the least generalized one?
+    lowest_node = min(Sn, key = lambda t: t[0])
+
+    # get QI names and their indexes (i.e. their generalization level)
+    qis = list()
+    qi_indexes = list()
+    for i in range(len(lowest_node)):
+        if lowest_node[i] in Q:
+            qis.append(lowest_node[i])
+            qi_indexes.append(lowest_node[i+1])
+    #print(qis)
+    #print(qi_indexes)
+
+    # get all table attributes with generalized QI's in place of the original ones
+    gen_attr = attributes
+    for i in range(len(gen_attr)):
+        gen_attr[i] = gen_attr[i].split()[0]
+        if gen_attr[i] in qis:
+            gen_attr[i] = qis[i] + "_dim.'" + str(qi_indexes[i]) + "'"
+    #print(gen_attr)
+
+    # get dimension tables names
+    dim_tables = list()
+    for qi in qis:
+        dim_tables.append(qi + "_dim")
+
+    # get pairings for the SQL JOIN
+    pairs = list()
+    for x, y in zip(qis, dim_tables):
+        pairs.append(x + "=" + y + ".'0'")
+
+    #print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+    #      " WHERE " + 'AND '.join(pairs))
+    cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+          " WHERE " + 'AND '.join(pairs))
+
 
 
 class Node:
@@ -547,6 +582,9 @@ if __name__ == "__main__":
     connection = sqlite3.connect(":memory:")
     #connection = sqlite3.connect("identifier.sqlite")
     cursor = connection.cursor()
+
+    # all attributes of the table
+    attributes = list()
 
     prepare_table_to_be_k_anonymized(cursor)
 
