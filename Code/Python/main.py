@@ -517,7 +517,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
         graph_generation(Ci, Si, Ei, i)
 
 
-def projection_of_attributes_of_Sn_onto_T_and_dimension_tables():
+def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     pass
 
 
@@ -575,9 +575,10 @@ if __name__ == "__main__":
     basic_incognito_algorithm(queue.PriorityQueue(), Q, k)
 
     cursor.execute("SELECT * FROM Si")
-    print(list(cursor))
+    Sn = list(cursor)
+    print(Sn)
 
-    projection_of_attributes_of_Sn_onto_T_and_dimension_tables()
+    projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
     connection.close()
 
