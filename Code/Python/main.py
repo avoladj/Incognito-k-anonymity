@@ -140,7 +140,6 @@ def init_C1_and_E1():
     """
 
 
-
 def create_tables_Ci_Ei():
     # Ci initally has only one pair dimx, indexx, which will increment if k-anonymity is not achieved
     # autoincrement id starts from 1 by default
@@ -157,11 +156,15 @@ def get_height_of_node(node):
     height = 0
     length = len(node)
     while True:
-        # 2+5*0, 2+5*1, 2+5*2, ...
-        j = 2 + 5*i
+        # 2, 6, 8, ...
+        if i == 0:
+            j = 2
+        else:
+            j = 6 + 2*(i-1)
         if j >= length:
             break
-        height += node[j]
+        if node[j] != 'null':
+            height += node[j]
         i += 1
     return height
 
@@ -191,7 +194,6 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
     freq_set = list()
     for count in list(cursor):
         freq_set.append(count[0])
-    # node.frequency_set = freq_set
     return freq_set
 
 
@@ -238,9 +240,12 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     # creo JoinedTable con 'age1' con colonna generalizzata
     # SELECT SUM(COUNT) FROM JoinedTable GROUP BY age1
 
-    for i in range(len(changed_qis)):
+    select_items = list()
+    where_items = list()
+    group_by_attributes = set(attributes)
+    dimension_table_names = list()
 
-        # todo estendere a piu' di un changed_qis e non solo uno
+    for i in range(len(changed_qis)):
 
         column_name = changed_qis[i][0]
         generalization_level = changed_qis[i][1]
@@ -249,22 +254,26 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
         dimension_table = column_name + "_dim"
         dimension_with_previous_generalization_level = dimension_table + ".\"" + previous_generalization_level_str + "\""
 
-        group_by_attributes = set(attributes)
         if column_name in attributes:
             group_by_attributes.remove(column_name)
             group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
 
-        cursor.execute("INSERT INTO TempTable "
-                       "SELECT COUNT(*) as count, " +
-                       dimension_table + ".\"" + generalization_level_str + "\" AS " + column_name +
-                       " FROM AdultData, " + dimension_table +
-                       " WHERE AdultData." + column_name + " = " + dimension_with_previous_generalization_level +
-                       " GROUP BY " + ','.join(group_by_attributes))
+        select_item = dimension_table + ".\"" + generalization_level_str + "\" AS " + column_name
+        where_item = "AdultData." + column_name + " = " + dimension_with_previous_generalization_level
 
-        cursor.execute("SELECT * FROM TempTable")
-        #print(cursor.fetchall())
+        select_items.append(select_item)
+        where_items.append(where_item)
+        dimension_table_names.append(dimension_table)
 
-    #print("SELECT SUM(count) FROM TempTable GROUP BY " + ', '.join(attributes))
+    cursor.execute("INSERT INTO TempTable "
+                   "SELECT COUNT(*) as count, " + ', '.join(select_items) +
+                   " FROM AdultData, " + ', '.join(dimension_table_names) +
+                   " WHERE " + 'and '.join(where_items) +
+                   " GROUP BY " + ', '.join(group_by_attributes))
+
+    # cursor.execute("SELECT * FROM TempTable")
+    # print(cursor.fetchall())
+
     cursor.execute("SELECT SUM(count) FROM TempTable GROUP BY " + ', '.join(attributes))
     results = list(cursor)
     freq_set = list()
@@ -364,12 +373,13 @@ def graph_generation(Ci, Si, Ei, i):
             str_j = str(j)
             help_me += ", q.dim" + str_j + ", q.index" + str_j
             if i_is_greater_than_1:
-                help_me_now += "and p.dim" + str_j + " < q.dim" + str_j
+                help_me_now += "and p.dim" + str_j + " < q.dim" + str_j + " "
         else:
             str_j = str(indexes)
             help_me += ", p.dim" + str_j + ", p.index" + str_j
             if i_is_greater_than_1:
-                help_me_now += "and p.dim" + str_j + " = q.dim" + str_j + " and p.index" + str_j + " = q.index" + str_j
+                help_me_now += "and p.dim" + str_j + " = q.dim" + str_j \
+                               + " and p.index" + str_j + " = q.index" + str_j + " "
 
     # join phase. Ci == Ci+1
     if i_is_greater_than_1:
@@ -436,7 +446,7 @@ def graph_generation(Ci, Si, Ei, i):
     cursor.execute("SELECT * FROM Si")
     print(list(cursor))
     """
-    if i != len(Q) - 1:
+    if i != len(Q):
         cursor.execute("DROP TABLE Si")
         connection.commit()
 
@@ -502,11 +512,6 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
                     Si.remove(node)
-                    try:
-                        # todo non so se serve
-                        cursor.execute("DELETE FROM Si WHERE ID = " + str(node[0]))
-                    except:
-                        pass
                     insert_direct_generalization_of_node_in_queue(node, queue)
 
         graph_generation(Ci, Si, Ei, i)
