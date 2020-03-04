@@ -8,7 +8,6 @@ from sympy import subsets
 
 
 def prepare_table_to_be_k_anonymized(cursor):
-    attributes = list()
     path_to_datasets = "../datasets/"
     # get attributes from adult.names
     with open(path_to_datasets + "adult.names", "r") as adult_names:
@@ -418,7 +417,7 @@ def graph_generation(Ci, Si, Ei, i):
                 cursor.execute("DELETE FROM Ei WHERE Ei.start = " + node_id)
 
     cursor.execute("SELECT * FROM Ci")
-    print(list(cursor))
+    #print(list(cursor))
 
     # edge generation
     cursor.execute("INSERT INTO Ei "
@@ -504,11 +503,14 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q)
                     map_node_frequency_set[node] = frequency_set
+                    print("Freq_set root: " + str(frequency_set))
                 else:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(
                         Ei, map_node_frequency_set, node, Q)
+                    print("Freq_set: " + str(frequency_set))
                     map_node_frequency_set[node] = frequency_set
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
+                    print("NODE " + str(node) + " IS ANONYMOUS")
                     mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
                     Si.remove(node)
@@ -517,8 +519,47 @@ def basic_incognito_algorithm(priority_queue, Q, k):
         graph_generation(Ci, Si, Ei, i)
 
 
-def projection_of_attributes_of_Sn_onto_T_and_dimension_tables():
-    pass
+def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
+    # get node with lowest ID, as it should be the least "generalized" one that makes the table k-anonymous
+    # TODO: is it really the least generalized one?
+    lowest_node = min(Sn, key = lambda t: t[0])
+    #lowest_node = list(Sn)[0]
+    print("Lowest node: " + str(lowest_node))
+
+    # get QI names and their indexes (i.e. their generalization level)
+    qis = list()
+    qi_indexes = list()
+    for i in range(len(lowest_node)):
+        if lowest_node[i] in Q:
+            qis.append(lowest_node[i])
+            qi_indexes.append(lowest_node[i+1])
+    #print("QIs: " + str(qis))
+    #print("QI_indexes: " + str(qi_indexes))
+
+    # get all table attributes with generalized QI's in place of the original ones
+    gen_attr = attributes
+    #print("Gen_attr before: " + str(gen_attr))
+    for i in range(len(gen_attr)):
+        gen_attr[i] = gen_attr[i].split()[0]
+        if gen_attr[i] in qis:
+            gen_attr[i] = qis[qis.index(gen_attr[i])] + "_dim.'" + str(qi_indexes[qis.index(gen_attr[i])]) + "'"
+    #print("Gen_attr after: " + str(gen_attr))
+
+    # get dimension tables names
+    dim_tables = list()
+    for qi in qis:
+        dim_tables.append(qi + "_dim")
+
+    # get pairings for the SQL JOIN
+    pairs = list()
+    for x, y in zip(qis, dim_tables):
+        pairs.append(x + "=" + y + ".'0'")
+
+    print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+          " WHERE " + 'AND '.join(pairs))
+    #cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+    #      " WHERE " + 'AND '.join(pairs))
+
 
 
 class Node:
@@ -548,6 +589,9 @@ if __name__ == "__main__":
     #connection = sqlite3.connect("identifier.sqlite")
     cursor = connection.cursor()
 
+    # all attributes of the table
+    attributes = list()
+
     prepare_table_to_be_k_anonymized(cursor)
 
     # Q is a set containing the quasi-identifiers. eg:
@@ -575,9 +619,10 @@ if __name__ == "__main__":
     basic_incognito_algorithm(queue.PriorityQueue(), Q, k)
 
     cursor.execute("SELECT * FROM Si")
-    print(list(cursor))
+    Sn = list(cursor)
+    print("Sn: " + str(Sn))
 
-    projection_of_attributes_of_Sn_onto_T_and_dimension_tables()
+    projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
     connection.close()
 
