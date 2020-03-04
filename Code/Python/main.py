@@ -417,7 +417,7 @@ def graph_generation(Ci, Si, Ei, i):
                 cursor.execute("DELETE FROM Ei WHERE Ei.start = " + node_id)
 
     cursor.execute("SELECT * FROM Ci")
-    print(list(cursor))
+    #print(list(cursor))
 
     # edge generation
     cursor.execute("INSERT INTO Ei "
@@ -503,11 +503,14 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q)
                     map_node_frequency_set[node] = frequency_set
+                    print("Freq_set root: " + str(frequency_set))
                 else:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(
                         Ei, map_node_frequency_set, node, Q)
+                    print("Freq_set: " + str(frequency_set))
                     map_node_frequency_set[node] = frequency_set
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
+                    print("NODE " + str(node) + " IS ANONYMOUS")
                     mark_all_direct_generalizations_of_node(marked_nodes, node)
                 else:
                     Si.remove(node)
@@ -520,6 +523,8 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     # get node with lowest ID, as it should be the least "generalized" one that makes the table k-anonymous
     # TODO: is it really the least generalized one?
     lowest_node = min(Sn, key = lambda t: t[0])
+    #lowest_node = list(Sn)[0]
+    print("Lowest node: " + str(lowest_node))
 
     # get QI names and their indexes (i.e. their generalization level)
     qis = list()
@@ -528,16 +533,17 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
         if lowest_node[i] in Q:
             qis.append(lowest_node[i])
             qi_indexes.append(lowest_node[i+1])
-    #print(qis)
-    #print(qi_indexes)
+    #print("QIs: " + str(qis))
+    #print("QI_indexes: " + str(qi_indexes))
 
     # get all table attributes with generalized QI's in place of the original ones
     gen_attr = attributes
+    #print("Gen_attr before: " + str(gen_attr))
     for i in range(len(gen_attr)):
         gen_attr[i] = gen_attr[i].split()[0]
         if gen_attr[i] in qis:
-            gen_attr[i] = qis[i] + "_dim.'" + str(qi_indexes[i]) + "'"
-    #print(gen_attr)
+            gen_attr[i] = qis[qis.index(gen_attr[i])] + "_dim.'" + str(qi_indexes[qis.index(gen_attr[i])]) + "'"
+    #print("Gen_attr after: " + str(gen_attr))
 
     # get dimension tables names
     dim_tables = list()
@@ -549,10 +555,10 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     for x, y in zip(qis, dim_tables):
         pairs.append(x + "=" + y + ".'0'")
 
-    #print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
-    #      " WHERE " + 'AND '.join(pairs))
-    cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+    print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
           " WHERE " + 'AND '.join(pairs))
+    #cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+    #      " WHERE " + 'AND '.join(pairs))
 
 
 
@@ -614,7 +620,7 @@ if __name__ == "__main__":
 
     cursor.execute("SELECT * FROM Si")
     Sn = list(cursor)
-    print(Sn)
+    print("Sn: " + str(Sn))
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
