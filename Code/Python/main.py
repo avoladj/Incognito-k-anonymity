@@ -230,7 +230,14 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
                 changed_qis.append(dims_and_indexes_s_node[i])
 
     attributes = get_dimensions_of_node(node)
-    cursor.execute("CREATE TEMPORARY TABLE TempTable (count INT, " + ', '.join(attributes) + ")")
+    # TODO: MISURA ALTAMENTE TEMPORANEA
+    temp_attr = set(attributes)
+    for elem in temp_attr:
+        if elem == "occupation":
+            temp_attr.remove(elem)
+            temp_attr.add(elem + " TEXT")
+    # FINE MISURA TEMPORANEA
+    cursor.execute("CREATE TEMPORARY TABLE TempTable (count INT, " + ', '.join(temp_attr) + ")")
     connection.commit()
 
     # SELECT COUNT(*), age FROM AdultData GROUP BY age
@@ -316,12 +323,16 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     cursor.execute("PRAGMA table_info(mia_zia)")
     print(list(cursor))
     """
+    cursor.execute("SELECT COUNT(*) FROM AdultData")
+    print("COUNT DELLE RIGHE DI ADULTDATA PRE-MODIFICA, DEVONO ESSERE 32561: " + str(list(cursor)))
     cursor.execute("DELETE FROM AdultData")
     cursor.execute("INSERT INTO AdultData SELECT * FROM mia_zia")
     cursor.execute("DROP TABLE mia_zia")
     connection.commit()
+    cursor.execute("SELECT COUNT(*) FROM AdultData")
+    print("COUNT DELLE RIGHE DI ADULTDATA POST-MODIFICA, DEVONO ESSERE 32561: " + str(list(cursor)))
     cursor.execute("SELECT * FROM AdultData")
-    print(list(cursor))
+    #print(list(cursor))
     return freq_set
 
 
