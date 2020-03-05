@@ -264,15 +264,21 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
         where_items.append(where_item)
         dimension_table_names.append(dimension_table)
 
+    print("INSERT INTO TempTable "
+                   "SELECT COUNT(*) as count, " + ', '.join(select_items) +
+                   " FROM AdultData, " + ', '.join(dimension_table_names) +
+                   " WHERE " + ' and '.join(where_items) +
+                   " GROUP BY " + ', '.join(group_by_attributes))
     cursor.execute("INSERT INTO TempTable "
                    "SELECT COUNT(*) as count, " + ', '.join(select_items) +
                    " FROM AdultData, " + ', '.join(dimension_table_names) +
-                   " WHERE " + 'and '.join(where_items) +
+                   " WHERE " + ' and '.join(where_items) +
                    " GROUP BY " + ', '.join(group_by_attributes))
 
     # cursor.execute("SELECT * FROM TempTable")
     # print(cursor.fetchall())
 
+    print("SELECT SUM(count) FROM TempTable GROUP BY " + ', '.join(attributes))
     cursor.execute("SELECT SUM(count) FROM TempTable GROUP BY " + ', '.join(attributes))
     results = list(cursor)
     freq_set = list()
@@ -282,10 +288,45 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     cursor.execute("DROP TABLE TempTable")
     connection.commit()
 
+    cursor.execute("PRAGMA table_info(AdultData)")
+    column_infos = list()
+    column_infos_from_db = list(cursor)
+    mia_zia_select_items = list()
+    for column in column_infos_from_db:
+        abc = str(column[1])
+        column_infos.append(abc + " " + str(column[2]))
+        mia_zia_select_items.append(abc)
+        """
+        for item in select_items:
+            if abc not in item and abc not in select_items:
+                select_items.append(abc)
+        """
+
+    cursor.execute("CREATE TEMPORARY TABLE mia_zia (" + ', '.join(column_infos) + ")")
+    connection.commit()
+    print("INSERT INTO mia_zia SELECT " + ', '.join(mia_zia_select_items)
+                   + " FROM AdultData, " + ', '.join(dimension_table_names)
+                   + " WHERE " + ' and '.join(where_items))
+    cursor.execute("INSERT INTO mia_zia SELECT " + ', '.join(mia_zia_select_items)
+                   + " FROM AdultData, " + ', '.join(dimension_table_names)
+                   + " WHERE " + ' and '.join(where_items))
+    """
+    cursor.execute("SELECT * FROM mia_zia")
+    print(list(cursor))
+    cursor.execute("PRAGMA table_info(mia_zia)")
+    print(list(cursor))
+    """
+    cursor.execute("DELETE FROM AdultData")
+    cursor.execute("INSERT INTO AdultData SELECT * FROM mia_zia")
+    cursor.execute("DROP TABLE mia_zia")
+    connection.commit()
+    cursor.execute("SELECT * FROM AdultData")
+    print(list(cursor))
     return freq_set
 
 
 def mark_all_direct_generalizations_of_node(marked_nodes, node):
+    marked_nodes.add(node[0])
     cursor.execute("SELECT Ei.end FROM Ci, Ei WHERE ID = Ei.start and ID = " + str(node[0]))
     for node_to_mark in list(cursor):
         marked_nodes.add(node_to_mark[0])
@@ -555,11 +596,23 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     for x, y in zip(qis, dim_tables):
         pairs.append(x + "=" + y + ".'0'")
 
+    """
+
     print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
           " WHERE " + 'AND '.join(pairs))
-    #cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
-    #      " WHERE " + 'AND '.join(pairs))
-
+    
+    cursor.execute("SELECT "
+                   + "age_dim.'2', occupation"
+                   # + ', '.join(gen_attr)
+                   + " FROM AdultData, " + ', '.join(dim_tables) +
+          " WHERE " + 'AND '.join(pairs))
+    a = list(cursor)
+    for boh in a:
+        for kdjf in boh:
+            print(str(kdjf), end= "\t")
+        print("\n")
+    
+    """
 
 
 class Node:
