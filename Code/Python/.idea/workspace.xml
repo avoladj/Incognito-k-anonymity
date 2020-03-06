@@ -49,13 +49,7 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_BRANCH_BY_REPOSITORY">
-      <map>
-        <entry key="$PROJECT_DIR$/../.." value="d5cc4ab205c1fb01f98a6e71666d9b574ad31530" />
-      </map>
-    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
-    <option name="RESET_MODE" value="HARD" />
   </component>
   <component name="ProjectId" id="1Y1PyQugHTjyMR3DFhAEpqYYWuk" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
