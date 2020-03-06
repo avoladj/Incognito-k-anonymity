@@ -289,6 +289,7 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
 
 
 def mark_all_direct_generalizations_of_node(marked_nodes, node):
+    marked_nodes.add(node[0])
     cursor.execute("SELECT Ei.end FROM Ci, Ei WHERE ID = Ei.start and ID = " + str(node[0]))
     for node_to_mark in list(cursor):
         marked_nodes.add(node_to_mark[0])
