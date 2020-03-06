@@ -547,6 +547,40 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     # TODO: is it really the least generalized one?
     lowest_node = min(Sn, key = lambda t: t[0])
     #lowest_node = list(Sn)[0]
+
+    """
+    mia_zia = dict()
+    for qi in Q:
+        indexes = list()
+        for node in Sn:
+            for i in range(len(node)):
+                item = node[i]
+                if qi == str(item) and i+1 <= len(node) - 1:
+                    # node[i+1] == index of qi
+                    # (id, index)
+                    indexes.append((node[0], node[i+1]))
+        mia_zia[qi] = indexes
+
+    for qi in mia_zia:
+        index_max = max(mia_zia[qi], key=lambda t: t[1])[0]
+        
+    oppure
+    
+    # [(id, dim1, index1, dim2, index2, ...), (...), ...]
+    mia_zia = dict()
+    for node in Sn:
+        dims_and_indexes = list()
+        for i in range(len(node)):
+            item = node[i]
+            if item in Q and i+1 <= len(node) - 1:
+                dims_and_indexes.append((item, node[i+1]))
+        if len(dims_and_indexes) == len(Q):
+            mia_zia[node[0]] = dims_and_indexes
+
+    max_id = 0
+    for i in mia_zia:
+    """
+
     print("Lowest node: " + str(lowest_node))
 
     # get QI names and their indexes (i.e. their generalization level)
