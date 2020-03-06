@@ -249,7 +249,10 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
         column_name = changed_qis[i][0]
         generalization_level = changed_qis[i][1]
         generalization_level_str = str(generalization_level)
-        previous_generalization_level_str = str(generalization_level - 1)
+        #previous_generalization_level_str = str(generalization_level - 1)
+        # TODO: temporary
+        previous_generalization_level_str = "0"
+
         dimension_table = column_name + "_dim"
         dimension_with_previous_generalization_level = dimension_table + ".\"" + previous_generalization_level_str + "\""
 
@@ -503,11 +506,11 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q)
                     map_node_frequency_set[node] = frequency_set
-                    print("Freq_set root: " + str(frequency_set))
+                    print("Freq_set root for " + str(node) + ": " + str(frequency_set))
                 else:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(
                         Ei, map_node_frequency_set, node, Q)
-                    print("Freq_set: " + str(frequency_set))
+                    print("Freq_set for " + str(node) + ": " + str(frequency_set))
                     map_node_frequency_set[node] = frequency_set
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
                     print("NODE " + str(node) + " IS ANONYMOUS")

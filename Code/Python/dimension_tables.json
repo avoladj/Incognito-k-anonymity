@@ -17,10 +17,10 @@
 
 	"occupation":{
 		"type": "text",
-		"0":["Tech-support", "Craft-repair", "Other-service", "Sales", "Exec-managerial",
-			"Prof-specialty", "Handlers-cleaners", "Machine-op-inspct", "Adm-clerical",
-			"Farming-fishing", "Transport-moving", "Priv-house-serv", "Protective-serv",
-			"Armed-Forces", "?"],
+		"0":["Tech_support", "Craft_repair", "Other_service", "Sales", "Exec_managerial",
+			"Prof_specialty", "Handlers_cleaners", "Machine_op_inspct", "Adm_clerical",
+			"Farming_fishing", "Transport_moving", "Priv_house_serv", "Protective_serv",
+			"Armed_Forces", "?"],
 		"1":["Tech", "Tech", "Other", "Other", "Managerial",
 			"Other", "Manual", "Other", "Managerial",
 			"Manual", "Other", "Manual", "Armed",
