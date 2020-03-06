@@ -311,17 +311,32 @@ def insert_direct_generalization_of_node_in_queue(node, queue):
         queue.put_nowait((-get_height_of_node(node), node))
 
 
-def all_subsets(c, i):
-    my_set = set()
+def all_subsets(c, i, Ci):
+    my_set = list()
     # extract only the ids
     p = 0
     length = len(c)
     while True:
-        # 0+7*0, 0+7*1, 0+7*2, ...
-        j = 7*p
-        if j >= length:
-            break
-        my_set.add(c[j])
+        # 0, 5,6, 8,9, 11,12, ...
+        if p == 0:
+            j = 0
+            my_set.append(c[j])
+        else:
+            j = 5 + 3*(p-1)
+            if j >= length:
+                break
+            tupla = []
+            tupla.append(c[j])
+
+            if j+1 != 1:
+                if j+1 >= length:
+                    break
+                tupla.append(c[j+1])
+            for node in Ci:
+                if tupla[0] != "null" and tupla[0] in node and tupla[1] != "null" and tupla[1] in node and \
+                        node[0] not in my_set:
+                    my_set.append(node[0])
+                    break
         p += 1
     return subsets(my_set, i)
 
@@ -405,22 +420,26 @@ def graph_generation(Ci, Si, Ei, i):
         t = 0
         length = len(c)
         while True:
-            r = 7 * t
+            if t == 0:
+                r = 0
+            else:
+                r = 4 + 3 * (t - 1)
             if r >= length:
                 break
-            keys.append(c[r])
+            if c[r] != "null":
+                keys.append(c[r])
             t += 1
         Ci_map[tuple(keys)] = c
 
     # prune phase
     for c in Ci_new:
-        for s in all_subsets(c, i):
+        for s in all_subsets(c, i, Ci):
             if s in Ci_map.keys() and Ci_map[s] not in Si_new:
                 node_id = str(c[0])
                 cursor.execute("DELETE FROM Ci WHERE Ci.ID = " + node_id)
                 cursor.execute("DELETE FROM Ei WHERE Ei.start = " + node_id)
 
-    cursor.execute("SELECT * FROM Ci")
+    #cursor.execute("SELECT * FROM Ci")
     #print(list(cursor))
 
     # edge generation
@@ -561,9 +580,9 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
 
     print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
           " WHERE " + 'AND '.join(pairs))
-    #cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
-    #      " WHERE " + 'AND '.join(pairs))
-
+    cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+          " WHERE " + 'AND '.join(pairs))
+    #print((cursor.fetchall()))
 
 
 class Node:
