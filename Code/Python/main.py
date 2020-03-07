@@ -542,44 +542,50 @@ def basic_incognito_algorithm(priority_queue, Q, k):
         graph_generation(Ci, Si, Ei, i)
 
 
+def node_contains_all_qi(node, dims_and_indexes):
+    for dim_and_index in dims_and_indexes:
+        if dim_and_index[0] not in Q:
+            return False
+    return True
+
+
+def min_is_greater_than_indexes(min_zia, indexes):
+    for i in range(len(min_zia)):
+        if min_zia[i] > indexes[i]:
+            return True
+    return False
+
+
+def get_lowest_node(Sn, max_node_id):
+    for node in Sn:
+        if node[0] == max_node_id:
+            return node
+
+
 def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     # get node with lowest ID, as it should be the least "generalized" one that makes the table k-anonymous
     # TODO: is it really the least generalized one?
     lowest_node = min(Sn, key = lambda t: t[0])
     #lowest_node = list(Sn)[0]
 
-    """
-    mia_zia = dict()
-    for qi in Q:
-        indexes = list()
-        for node in Sn:
-            for i in range(len(node)):
-                item = node[i]
-                if qi == str(item) and i+1 <= len(node) - 1:
-                    # node[i+1] == index of qi
-                    # (id, index)
-                    indexes.append((node[0], node[i+1]))
-        mia_zia[qi] = indexes
-
-    for qi in mia_zia:
-        index_max = max(mia_zia[qi], key=lambda t: t[1])[0]
-        
-    oppure
-    
-    # [(id, dim1, index1, dim2, index2, ...), (...), ...]
-    mia_zia = dict()
+    max_indexes = list()
     for node in Sn:
-        dims_and_indexes = list()
-        for i in range(len(node)):
-            item = node[i]
-            if item in Q and i+1 <= len(node) - 1:
-                dims_and_indexes.append((item, node[i+1]))
-        if len(dims_and_indexes) == len(Q):
-            mia_zia[node[0]] = dims_and_indexes
+        dims_and_indexes = get_dims_and_indexes_of_node(node)
+        max_node_indexes = list()
+        if node_contains_all_qi(node, dims_and_indexes):
+            for dim_and_index in dims_and_indexes:
+                max_node_indexes.append(dim_and_index[1])
+        max_indexes.append((node[0], max_node_indexes))
 
-    max_id = 0
-    for i in mia_zia:
-    """
+    min_zia = [99999 for i in range(len(Q))]
+    min_node_id = -1
+
+    for item in max_indexes:
+        if len(item[1]) > 0 and min_is_greater_than_indexes(min_zia, item[1]):
+            min_zia = item[1]
+            min_node_id = item[0]
+
+    lowest_node = get_lowest_node(Sn, min_node_id)
 
     print("Lowest node: " + str(lowest_node))
 
@@ -612,11 +618,11 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     for x, y in zip(qis, dim_tables):
         pairs.append(x + "=" + y + ".'0'")
 
-    print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
-          " WHERE " + 'AND '.join(pairs))
+    #print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+    #      " WHERE " + 'AND '.join(pairs))
     cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
-          " WHERE " + 'AND '.join(pairs))
-    #print((cursor.fetchall()))
+          " WHERE " + 'AND '.join(pairs) + " LIMIT 20")
+    print((cursor.fetchall()))
 
 
 class Node:

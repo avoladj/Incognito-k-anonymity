@@ -160,7 +160,8 @@
       <workItem from="1582969483718" duration="7962000" />
       <workItem from="1582986248547" duration="2355000" />
       <workItem from="1582993301964" duration="350000" />
-      <workItem from="1583508167849" duration="7389000" />
+      <workItem from="1583508167849" duration="7565000" />
+      <workItem from="1583570865335" duration="3528000" />
     </task>
     <task id="LOCAL-00001" summary="starting incognito">
       <created>1582196134572</created>
@@ -274,7 +275,14 @@
       <option name="project" value="LOCAL" />
       <updated>1583514036236</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="la depressione mi sta salendo">
+      <created>1583516371067</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1583516371067</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -309,7 +317,8 @@
     <MESSAGE value="bug fixed...i hope" />
     <MESSAGE value="f2 works with multi-dimensions" />
     <MESSAGE value="qualcosa ho fatto, ma non cambia niente" />
-    <option name="LAST_COMMIT_MESSAGE" value="qualcosa ho fatto, ma non cambia niente" />
+    <MESSAGE value="la depressione mi sta salendo" />
+    <option name="LAST_COMMIT_MESSAGE" value="la depressione mi sta salendo" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -321,18 +330,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/main.py</url>
-          <line>564</line>
-          <option name="timeStamp" value="12" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/main.py</url>
-          <line>583</line>
-          <option name="timeStamp" value="14" />
+          <line>620</line>
+          <option name="timeStamp" value="19" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1583515804344" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1583574821374" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
