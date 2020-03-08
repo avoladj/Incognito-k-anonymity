@@ -188,8 +188,32 @@ def get_dimensions_of_node(node):
 
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
     attributes = get_dimensions_of_node(node)
+    dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
+    group_by_attributes = set(attributes)
+    dimension_table_names = list()
+    where_items = list()
+    for i in range(len(attributes)):
+        column_name = dims_and_indexes_s_node[i][0]
+        generalization_level = dims_and_indexes_s_node[i][1]
+        generalization_level_str = str(generalization_level)
+        # TODO: temporary
+        previous_generalization_level_str = "0"
+
+        dimension_table = column_name + "_dim"
+        dimension_with_previous_generalization_level = dimension_table + ".\"" + previous_generalization_level_str + "\""
+
+        if column_name in attributes:
+            group_by_attributes.remove(column_name)
+            group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
+
+        where_item = "AdultData." + column_name + " = " + dimension_with_previous_generalization_level
+
+        dimension_table_names.append(dimension_table)
+        where_items.append(where_item)
+
     #print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
-    cursor.execute("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
+    cursor.execute("SELECT COUNT(*) FROM AdultData, " + ', '.join(dimension_table_names) +
+                   " WHERE " + 'and '.join(where_items) + " GROUP BY " + ', '.join(group_by_attributes))
     freq_set = list()
     for count in list(cursor):
         freq_set.append(count[0])
@@ -217,17 +241,19 @@ def get_dims_and_indexes_of_node(node):
 def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, map_frequency_set, node, Q):
 
     cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ei.start = Ci.ID and Ei.end = " + str(node[0]))
-    parent_nodes = list(cursor)
+    #parent_nodes = list(cursor)
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
 
-    changed_qis = list()
+    #changed_qis = list()
 
-    for parent_node in parent_nodes:
-        dims_and_indexes_s_parent_node = get_dims_and_indexes_of_node(parent_node)
+    #for parent_node in parent_nodes:
+    #    dims_and_indexes_s_parent_node = get_dims_and_indexes_of_node(parent_node)
 
-        for i in range(len(dims_and_indexes_s_node)):
-            if dims_and_indexes_s_node[i] > dims_and_indexes_s_parent_node[i]:
-                changed_qis.append(dims_and_indexes_s_node[i])
+        #for i in range(len(dims_and_indexes_s_node)):
+        #    if dims_and_indexes_s_node[i] > dims_and_indexes_s_parent_node[i]:
+                #changed_qis.append(dims_and_indexes_s_node[i])
+                #dims_and_indexes_s_parent_node[i][1] = dims_and_indexes_s_node[i][1]
+        #        pass
 
     attributes = get_dimensions_of_node(node)
     cursor.execute("CREATE TEMPORARY TABLE TempTable (count INT, " + ', '.join(attributes) + ")")
@@ -244,10 +270,12 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     group_by_attributes = set(attributes)
     dimension_table_names = list()
 
-    for i in range(len(changed_qis)):
+    for i in range(len(attributes)):
 
-        column_name = changed_qis[i][0]
-        generalization_level = changed_qis[i][1]
+        #column_name = changed_qis[i][0]
+        column_name = dims_and_indexes_s_node[i][0]
+        #generalization_level = changed_qis[i][1]
+        generalization_level = dims_and_indexes_s_node[i][1]
         generalization_level_str = str(generalization_level)
         #previous_generalization_level_str = str(generalization_level - 1)
         # TODO: temporary
@@ -267,6 +295,11 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
         where_items.append(where_item)
         dimension_table_names.append(dimension_table)
 
+    print("INSERT INTO TempTable "
+                   "SELECT COUNT(*) as count, " + ', '.join(select_items) +
+                   " FROM AdultData, " + ', '.join(dimension_table_names) +
+                   " WHERE " + 'and '.join(where_items) +
+                   " GROUP BY " + ', '.join(group_by_attributes))
     cursor.execute("INSERT INTO TempTable "
                    "SELECT COUNT(*) as count, " + ', '.join(select_items) +
                    " FROM AdultData, " + ', '.join(dimension_table_names) +
@@ -396,21 +429,36 @@ def graph_generation(Ci, Si, Ei, i):
             str_j = str(indexes)
             help_me += ", p.dim" + str_j + ", p.index" + str_j
             if i_is_greater_than_1:
-                help_me_now += "and p.dim" + str_j + " = q.dim" + str_j \
-                               + " and p.index" + str_j + " = q.index" + str_j + " "
+                help_me_now += "and p.dim" + str_j + " != q.dim" + str_j + " "
 
     # join phase. Ci == Ci+1
     if i_is_greater_than_1:
+        #cursor.execute("INSERT INTO Ci "
+        #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
+        #           "FROM Si p, Si q "
+        #           "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
         cursor.execute("INSERT INTO Ci "
-                   "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
-                   "FROM Si p, Si q "
-                   "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
+                    "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
+                    "FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now +
+                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me.replace("p", "q") +
+                    " FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now.replace("p", "q"))
+        print("INSERT INTO Ci "
+                    "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
+                    "FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now +
+                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me.replace("p", "q") +
+                    " FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now.replace("p", "q"))
     else:
-        cursor.execute("INSERT INTO Ci "
-                   "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
-                   "FROM Si p, Si q "
-                   "WHERE p.index1 = q.index1 and p.dim1 < q.dim1")
+        #cursor.execute("INSERT INTO Ci "
+        #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
+        #           "FROM Si p, Si q "
+        #           "WHERE p.index1 = q.index1 and p.dim1 < q.dim1")
+        cursor.execute("INSERT INTO Ci SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
+                       " FROM Si p, Si q WHERE p.dim1<q.dim1 EXCEPT"
+                       " SELECT null, q.dim1, q.index1, p.ID, q.ID, p.dim1, p.index1"
+                       " FROM Si p, Si q WHERE p.dim1<q.dim1")
 
+    cursor.execute("SELECT * FROM Ci")
+    print("Ci: " + str(list(cursor)))
     cursor.execute("SELECT * FROM Ci")
     Ci_new = set(cursor)
 
@@ -432,15 +480,17 @@ def graph_generation(Ci, Si, Ei, i):
         Ci_map[tuple(keys)] = c
 
     # prune phase
+    '''
     for c in Ci_new:
         for s in all_subsets(c, i, Ci):
             if s in Ci_map.keys() and Ci_map[s] not in Si_new:
                 node_id = str(c[0])
                 cursor.execute("DELETE FROM Ci WHERE Ci.ID = " + node_id)
                 cursor.execute("DELETE FROM Ei WHERE Ei.start = " + node_id)
+                '''
 
-    #cursor.execute("SELECT * FROM Ci")
-    #print(list(cursor))
+    cursor.execute("SELECT * FROM Ci")
+    print("Pruned: " + str(list(cursor)))
 
     # edge generation
     cursor.execute("INSERT INTO Ei "
@@ -672,6 +722,10 @@ if __name__ == "__main__":
     create_dimension_tables(dimension_tables)
 
     k = int(args.k)
+
+    cursor.execute("SELECT COUNT(*) FROM AdultData, age_dim, occupation_dim WHERE AdultData.age=age_dim.\"0\" AND"
+                   " AdultData.occupation=occupation_dim.\"0\" GROUP BY age_dim.\"2\", occupation_dim.\"2\"")
+    print(list(cursor))
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
