@@ -384,6 +384,7 @@ def graph_generation(Ci, Si, Ei, i):
     column_infos_from_db = list(cursor)
     for column in column_infos_from_db:
         column_infos.append(str(column[1]) + " " + str(column[2]))
+    print("CREATE TABLE IF NOT EXISTS Si (" + ', '.join(column_infos) + ")")
     cursor.execute("CREATE TABLE IF NOT EXISTS Si (" + ', '.join(column_infos) + ")")
     connection.commit()
     question_marks = ""
@@ -392,15 +393,15 @@ def graph_generation(Ci, Si, Ei, i):
     question_marks += " ? "
     cursor.executemany("INSERT INTO Si values (" + question_marks + ")", Si)
 
-    """
-    serve per console sqlite database pycharm 
+
+    #serve per console sqlite database pycharm
     mia_zia = list()
     for tupla in Si:
         mia_zia.append("(" + str(tupla[0]) + " ," + str(tupla[1]) + " ," + str(tupla[2]) + " ," +
                        str(tupla[3]) + " ," + str(tupla[4]) + ")")
 
     print("INSERT INTO Si values " + ", ".join(mia_zia))
-    """
+
 
     cursor.execute("SELECT * FROM Si")
     Si_new = set(cursor)
