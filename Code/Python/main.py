@@ -188,12 +188,16 @@ def get_dimensions_of_node(node):
 
 def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
     attributes = get_dimensions_of_node(node)
+    try:
+        attributes.remove("null")
+    except:
+        pass
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
     group_by_attributes = set(attributes)
     dimension_table_names = list()
     where_items = list()
-    for i in range(len(attributes)):
-        if dims_and_indexes_s_node[i][0] == "null" and dims_and_indexes_s_node[i][1] == "null":
+    for i in range(len(dims_and_indexes_s_node)):
+        if dims_and_indexes_s_node[i][0] == "null" or dims_and_indexes_s_node[i][1] == "null":
             continue
         column_name = dims_and_indexes_s_node[i][0]
         generalization_level = dims_and_indexes_s_node[i][1]
@@ -258,6 +262,11 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
         #        pass
 
     attributes = get_dimensions_of_node(node)
+    try:
+        while True:
+            attributes.remove("null")
+    except:
+        pass
     cursor.execute("CREATE TEMPORARY TABLE TempTable (count INT, " + ', '.join(attributes) + ")")
     connection.commit()
 
@@ -272,8 +281,10 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     group_by_attributes = set(attributes)
     dimension_table_names = list()
 
-    for i in range(len(attributes)):
+    for i in range(len(dims_and_indexes_s_node)):
 
+        if dims_and_indexes_s_node[i][0]  == "null" or dims_and_indexes_s_node[i][1] == "null":
+            continue
         #column_name = changed_qis[i][0]
         column_name = dims_and_indexes_s_node[i][0]
         #generalization_level = changed_qis[i][1]
@@ -725,6 +736,27 @@ if __name__ == "__main__":
 
     k = int(args.k)
 
+    """
+    cursor.execute("SELECT DISTINCT AdultData.education_num FROM AdultData")
+    a99 = list(cursor)
+    a0 = list()
+    for item in a99:
+        a0.append(item[0])
+    a1 = list()
+    a2 = list()
+    for elem in a0:
+        if elem <= 5:
+            a1.append(1)
+        elif elem >= 15:
+            a1.append(20)
+        else:
+            a1.append(10)
+        a2.append(20)
+    print(a0)
+    print(a1)
+    print(a2)
+    print()
+    """
     """
     for i in range(3):
         for j in range(3):
