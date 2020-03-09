@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="97909e0e-e8b0-4629-88d7-f0d0864c1e25" name="Default Changelist" comment="">
+    <list default="true" id="97909e0e-e8b0-4629-88d7-f0d0864c1e25" name="Default Changelist" comment="ghe semmu?">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identifier.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/identifier.sqlite" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Q.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Q.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dimension_tables.json" beforeDir="false" afterPath="$PROJECT_DIR$/dimension_tables.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -51,7 +52,7 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
-    <option name="UPDATE_TYPE" value="MERGE" />
+    <option name="RESET_MODE" value="HARD" />
   </component>
   <component name="ProjectId" id="1Y1PyQugHTjyMR3DFhAEpqYYWuk" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -88,7 +89,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
-      <option name="PARAMETERS" value="-Q Q.csv -D dimension_tables.json -k 2" />
+      <option name="PARAMETERS" value="-Q Q.csv -D dimension_tables.json -k 200" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -107,7 +108,17 @@
       <serviceView>
         <option name="contentProportion" value="0.21914357" />
         <treeState>
-          <expand />
+          <expand>
+            <path>
+              <item name="services root" type="e789fda9:ObjectUtils$Sentinel" />
+              <item name="com.intellij.execution.services.ServiceModel$ServiceGroupNode@c80c0620" type="7427dc5b:ServiceModel$ServiceGroupNode" />
+            </path>
+            <path>
+              <item name="services root" type="e789fda9:ObjectUtils$Sentinel" />
+              <item name="com.intellij.execution.services.ServiceModel$ServiceGroupNode@c80c0620" type="7427dc5b:ServiceModel$ServiceGroupNode" />
+              <item name="com.intellij.execution.services.ServiceModel$ServiceNode@41d10b55" type="9fbbdea:ServiceModel$ServiceNode" />
+            </path>
+          </expand>
           <select />
         </treeState>
       </serviceView>
@@ -138,8 +149,9 @@
       <workItem from="1582986248547" duration="2355000" />
       <workItem from="1582993301964" duration="350000" />
       <workItem from="1583508167849" duration="7565000" />
-      <workItem from="1583570865335" duration="5753000" />
-      <workItem from="1583743885150" duration="195000" />
+      <workItem from="1583570865335" duration="3528000" />
+      <workItem from="1583746938500" duration="2677000" />
+      <workItem from="1583763325739" duration="1197000" />
     </task>
     <task id="LOCAL-00001" summary="starting incognito">
       <created>1582196134572</created>
@@ -260,14 +272,7 @@
       <option name="project" value="LOCAL" />
       <updated>1583516371067</updated>
     </task>
-    <task id="LOCAL-00018" summary="lowest_node ok (forse)">
-      <created>1583574915107</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1583574915107</updated>
-    </task>
-    <option name="localTasksCounter" value="19" />
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -303,10 +308,21 @@
     <MESSAGE value="f2 works with multi-dimensions" />
     <MESSAGE value="qualcosa ho fatto, ma non cambia niente" />
     <MESSAGE value="la depressione mi sta salendo" />
-    <MESSAGE value="lowest_node ok (forse)" />
-    <option name="LAST_COMMIT_MESSAGE" value="lowest_node ok (forse)" />
+    <MESSAGE value="ghe semmu?" />
+    <option name="LAST_COMMIT_MESSAGE" value="ghe semmu?" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>66</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1583575719492" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1583750591140" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

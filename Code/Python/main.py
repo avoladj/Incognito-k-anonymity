@@ -193,6 +193,8 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
     dimension_table_names = list()
     where_items = list()
     for i in range(len(attributes)):
+        if dims_and_indexes_s_node[i][0] == "null" and dims_and_indexes_s_node[i][1] == "null":
+            continue
         column_name = dims_and_indexes_s_node[i][0]
         generalization_level = dims_and_indexes_s_node[i][1]
         generalization_level_str = str(generalization_level)
@@ -211,7 +213,7 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
         dimension_table_names.append(dimension_table)
         where_items.append(where_item)
 
-    #print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
+    print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
     cursor.execute("SELECT COUNT(*) FROM AdultData, " + ', '.join(dimension_table_names) +
                    " WHERE " + 'and '.join(where_items) + " GROUP BY " + ', '.join(group_by_attributes))
     freq_set = list()
@@ -384,7 +386,6 @@ def graph_generation(Ci, Si, Ei, i):
     column_infos_from_db = list(cursor)
     for column in column_infos_from_db:
         column_infos.append(str(column[1]) + " " + str(column[2]))
-    print("CREATE TABLE IF NOT EXISTS Si (" + ', '.join(column_infos) + ")")
     cursor.execute("CREATE TABLE IF NOT EXISTS Si (" + ', '.join(column_infos) + ")")
     connection.commit()
     question_marks = ""
@@ -393,15 +394,15 @@ def graph_generation(Ci, Si, Ei, i):
     question_marks += " ? "
     cursor.executemany("INSERT INTO Si values (" + question_marks + ")", Si)
 
-
-    #serve per console sqlite database pycharm
+    """
+    serve per console sqlite database pycharm 
     mia_zia = list()
     for tupla in Si:
         mia_zia.append("(" + str(tupla[0]) + " ," + str(tupla[1]) + " ," + str(tupla[2]) + " ," +
                        str(tupla[3]) + " ," + str(tupla[4]) + ")")
 
     print("INSERT INTO Si values " + ", ".join(mia_zia))
-
+    """
 
     cursor.execute("SELECT * FROM Si")
     Si_new = set(cursor)
@@ -626,7 +627,7 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
         if node_contains_all_qi(node, dims_and_indexes):
             for dim_and_index in dims_and_indexes:
                 max_node_indexes.append(dim_and_index[1])
-        max_indexes.append((node[0], max_node_indexes))
+            max_indexes.append((node[0], max_node_indexes))
 
     min_zia = [99999 for i in range(len(Q))]
     min_node_id = -1
@@ -724,9 +725,25 @@ if __name__ == "__main__":
 
     k = int(args.k)
 
-    cursor.execute("SELECT COUNT(*) FROM AdultData, age_dim, occupation_dim WHERE AdultData.age=age_dim.\"0\" AND"
-                   " AdultData.occupation=occupation_dim.\"0\" GROUP BY age_dim.\"2\", occupation_dim.\"2\"")
-    print(list(cursor))
+    """
+    for i in range(3):
+        for j in range(3):
+            for k in range(2):
+                print("age = " + str(i) + ", occupation = " + str(j) + ", sex = " + str(k))
+                print("SELECT COUNT(*) FROM AdultData, age_dim, occupation_dim, sex_dim "
+                               "WHERE "
+                               "AdultData.age=age_dim.\"0\" AND AdultData.sex=sex_dim.\"0\""
+                               " AND AdultData.occupation=occupation_dim.\"0\" "
+                               "GROUP BY age_dim.\"" + str(i) + "\", "
+                               "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
+                cursor.execute("SELECT COUNT(*) FROM AdultData, age_dim, occupation_dim, sex_dim "
+                               "WHERE "
+                               "AdultData.age=age_dim.\"0\" AND AdultData.sex=sex_dim.\"0\""
+                               " AND AdultData.occupation=occupation_dim.\"0\" "
+                               "GROUP BY age_dim.\"" + str(i) + "\", "
+                               "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
+                print(list(cursor))
+    """
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
@@ -743,4 +760,3 @@ if __name__ == "__main__":
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
     connection.close()
-

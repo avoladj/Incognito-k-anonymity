@@ -25,9 +25,14 @@
 			"Other", "Manual", "Other", "Managerial",
 			"Manual", "Other", "Manual", "Armed",
 			"Armed", "Other"],
-		"2":["*", "*", "*", "*", "*",
-			"*", "*", "*", "*",
+		"2":["*", "*", "*", "*", "*", "*", "*", "*", "*",
 			"*", "*", "*", "*",
 			"*", "*"]
+	},
+
+	"sex":{
+		"type": "text",
+		"0":["Female", "Male"],
+		"1":["Person", "Person"]
 	}
 }
