@@ -250,17 +250,6 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     #parent_nodes = list(cursor)
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
 
-    #changed_qis = list()
-
-    #for parent_node in parent_nodes:
-    #    dims_and_indexes_s_parent_node = get_dims_and_indexes_of_node(parent_node)
-
-        #for i in range(len(dims_and_indexes_s_node)):
-        #    if dims_and_indexes_s_node[i] > dims_and_indexes_s_parent_node[i]:
-                #changed_qis.append(dims_and_indexes_s_node[i])
-                #dims_and_indexes_s_parent_node[i][1] = dims_and_indexes_s_node[i][1]
-        #        pass
-
     attributes = get_dimensions_of_node(node)
     try:
         while True:
@@ -706,7 +695,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Insert path and filename of QI, "
                                                  "path and filename of dimension tables and"
                                                  "k of k-anonymization")
-    parser.add_argument("--quasi_identifiers", "-Q", required=True, type=str)
     parser.add_argument("--dimension_tables", "-D", required=True, type=str)
     parser.add_argument("--k", "-k", required=True, type=str)
     args = parser.parse_args()
@@ -720,16 +708,16 @@ if __name__ == "__main__":
 
     prepare_table_to_be_k_anonymized(cursor)
 
-    # Q is a set containing the quasi-identifiers. eg:
-    # <class 'set'>: {'age', 'occupation'}
-    Q = get_quasi_identifiers()
-
     """
      dimension_tables is a dictionary in which a single key is a specific QI (except the first that indicates the type) and
      dimension_tables[QI] is the dimension table of QI. eg:
      <class 'dict'>: {'age': {'0': [1, 2, 3], '1': [4, 5]}, 'occupation': {'0': ['a', 'b', 'c'], '1': ['d', 'e'], '2': ['*']}}
+    
+     Q is a set containing the quasi-identifiers. eg:
+     <class 'set'>: {'age', 'occupation'}
     """
     dimension_tables = get_dimension_tables()
+    Q = set(dimension_tables.keys())
 
     # create dimension SQL tables
     create_dimension_tables(dimension_tables)
