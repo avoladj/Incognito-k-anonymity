@@ -7,11 +7,11 @@ import queue
 from sympy import subsets
 
 
-def prepare_table_to_be_k_anonymized(cursor):
+def prepare_table_to_be_k_anonymized(dataset, cursor):
     path_to_datasets = "../datasets/"
     # get attributes from adult.names
-    with open(path_to_datasets + "adult.names", "r") as adult_names:
-        for line in adult_names:
+    with open(path_to_datasets + dataset + ".names", "r") as dataset_names:
+        for line in dataset_names:
             if not line.startswith("|") and re.search(".:.", line) is not None:
                 split = line.split(":")
                 name_and_type_of_attribute_to_append = split[0].strip().replace("-", "_")
@@ -20,13 +20,14 @@ def prepare_table_to_be_k_anonymized(cursor):
                 else:
                     name_and_type_of_attribute_to_append += " TEXT"
                 attributes.append(name_and_type_of_attribute_to_append)
-    # insert records in adult.data in table AdultData
-    with open(path_to_datasets + "adult.data", "r") as adult_data:
-        table_name = "AdultData"
+    # insert records in adult.data in table " + dataset + "
+    with open(path_to_datasets + dataset + ".data", "r") as dataset_data:
+        #table_name = "" + dataset + ""
+        table_name = dataset
         cursor.execute("CREATE TABLE IF NOT EXISTS " + table_name + "(" + ','.join(attributes) + ")")
         connection.commit()
 
-        for line in adult_data:
+        for line in dataset_data:
             """
             For each line I remove the 'classification' attribute (<>=50K), 
             every number will be converted to a float and
@@ -212,13 +213,13 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
             group_by_attributes.remove(column_name)
             group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
 
-        where_item = "AdultData." + column_name + " = " + dimension_with_previous_generalization_level
+        where_item = "" + dataset + "." + column_name + " = " + dimension_with_previous_generalization_level
 
         dimension_table_names.append(dimension_table)
         where_items.append(where_item)
 
-    print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM AdultData GROUP BY " + ', '.join(attributes))
-    cursor.execute("SELECT COUNT(*) FROM AdultData, " + ', '.join(dimension_table_names) +
+    print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM " + dataset + " GROUP BY " + ', '.join(attributes))
+    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", " + ', '.join(dimension_table_names) +
                    " WHERE " + 'and '.join(where_items) + " GROUP BY " + ', '.join(group_by_attributes))
     freq_set = list()
     for count in list(cursor):
@@ -259,7 +260,7 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     cursor.execute("CREATE TEMPORARY TABLE TempTable (count INT, " + ', '.join(attributes) + ")")
     connection.commit()
 
-    # SELECT COUNT(*), age FROM AdultData GROUP BY age
+    # SELECT COUNT(*), age FROM " + dataset + " GROUP BY age
     # prendere la colonna 'age'
     # generalizzo ogni valore rispetto 'age' changed_qis[i][1]
     # creo JoinedTable con 'age1' con colonna generalizzata
@@ -291,7 +292,7 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
             group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
 
         select_item = dimension_table + ".\"" + generalization_level_str + "\" AS " + column_name
-        where_item = "AdultData." + column_name + " = " + dimension_with_previous_generalization_level
+        where_item = "" + dataset + "." + column_name + " = " + dimension_with_previous_generalization_level
 
         select_items.append(select_item)
         where_items.append(where_item)
@@ -299,12 +300,12 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
 
     print("INSERT INTO TempTable "
                    "SELECT COUNT(*) as count, " + ', '.join(select_items) +
-                   " FROM AdultData, " + ', '.join(dimension_table_names) +
+                   " FROM " + dataset + ", " + ', '.join(dimension_table_names) +
                    " WHERE " + 'and '.join(where_items) +
                    " GROUP BY " + ', '.join(group_by_attributes))
     cursor.execute("INSERT INTO TempTable "
                    "SELECT COUNT(*) as count, " + ', '.join(select_items) +
-                   " FROM AdultData, " + ', '.join(dimension_table_names) +
+                   " FROM " + dataset + ", " + ', '.join(dimension_table_names) +
                    " WHERE " + 'and '.join(where_items) +
                    " GROUP BY " + ', '.join(group_by_attributes))
 
@@ -417,6 +418,8 @@ def graph_generation(Ci, Si, Ei, i):
 
     help_me = ""
     help_me_now = ""
+    help_me_except = ""
+    help_me_now_except = ""
     # j starts from 1, but here the indexes of 'dim' and 'index' are 2 => j = 2, indexes = 3 ...
     # if i > 1 otherwise I have p.dim1 = q.dim1 and p.dim1 < q.dim1 ._.
     i_is_greater_than_1 = i > 1
@@ -424,14 +427,34 @@ def graph_generation(Ci, Si, Ei, i):
         indexes = j + 1
         if indexes == i_here:
             str_j = str(j)
-            help_me += ", q.dim" + str_j + ", q.index" + str_j
+            abc = ", q.dim" + str_j + ", q.index" + str_j
+            help_me += abc
+            help_me_except += abc.replace("q", "p")
             if i_is_greater_than_1:
-                help_me_now += "and p.dim" + str_j + " < q.dim" + str_j + " "
+                qwe =  " and q.dim" + str_j + " != \"null\" and q.index" + str_j + " != \"null\""
+                help_me_now += "and p.dim" + str_j + " < q.dim" + str_j + qwe
+                help_me_now_except += qwe.replace("q", "p")
+
         else:
             str_j = str(indexes)
-            help_me += ", p.dim" + str_j + ", p.index" + str_j
-            if i_is_greater_than_1:
-                help_me_now += "and p.dim" + str_j + " != q.dim" + str_j + " "
+            abc = ", p.dim" + str_j + ", p.index" + str_j
+            help_me += abc
+            help_me_except += abc.replace("p", "q")
+            if i_is_greater_than_1 and j > 1:
+                help_me_now += "and p.dim" + str_j + " = q.dim" + str_j + " and p.index" + str_j + " = q.index" + str_j + " "
+
+#TODO: QUERY
+    """
+    
+SELECT null, p.dim1, p.index1, p.ID, q.ID , p.dim2, p.index2, q.dim2, q.index2
+FROM Si p, Si q
+WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and q.index2 != "null" and q.dim2 != "null"
+EXCEPT
+SELECT null, q.dim1, q.index1, p.ID, q.ID , q.dim2, q.index2, p.dim2, p.index2
+FROM Si p, Si q
+WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and p.index2 != "null" and q.dim2 != "null"
+
+    """
 
     # join phase. Ci == Ci+1
     if i_is_greater_than_1:
@@ -439,16 +462,16 @@ def graph_generation(Ci, Si, Ei, i):
         #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
         #           "FROM Si p, Si q "
         #           "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
+        print("SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " \n"
+                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now +
+                    "\n EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me_except +
+                    "\n FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
         cursor.execute("INSERT INTO Ci "
                     "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
-                    "FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now +
-                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me.replace("p", "q") +
-                    " FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now.replace("p", "q"))
-        print("INSERT INTO Ci "
-                    "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
-                    "FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now +
-                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me.replace("p", "q") +
-                    " FROM Si p, Si q WHERE p.dim1 < q.dim1 " + help_me_now.replace("p", "q"))
+                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now +
+                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me_except +
+                    " FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
+
     else:
         #cursor.execute("INSERT INTO Ci "
         #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
@@ -670,9 +693,9 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     for x, y in zip(qis, dim_tables):
         pairs.append(x + "=" + y + ".'0'")
 
-    #print("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+    #print("SELECT " + ', '.join(gen_attr) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
     #      " WHERE " + 'AND '.join(pairs))
-    cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM AdultData, " + ', '.join(dim_tables) +
+    cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
           " WHERE " + 'AND '.join(pairs) + " LIMIT 20")
     print((cursor.fetchall()))
 
@@ -695,6 +718,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Insert path and filename of QI, "
                                                  "path and filename of dimension tables and"
                                                  "k of k-anonymization")
+    parser.add_argument("--dataset", "-d", required=True, type=str)
     parser.add_argument("--dimension_tables", "-D", required=True, type=str)
     parser.add_argument("--k", "-k", required=True, type=str)
     args = parser.parse_args()
@@ -706,7 +730,9 @@ if __name__ == "__main__":
     # all attributes of the table
     attributes = list()
 
-    prepare_table_to_be_k_anonymized(cursor)
+    dataset = args.dataset
+
+    prepare_table_to_be_k_anonymized(dataset, cursor)
 
     """
      dimension_tables is a dictionary in which a single key is a specific QI (except the first that indicates the type) and
@@ -724,8 +750,9 @@ if __name__ == "__main__":
 
     k = int(args.k)
 
+
     """
-    cursor.execute("SELECT DISTINCT AdultData.education_num FROM AdultData")
+    cursor.execute("SELECT DISTINCT " + dataset + ".education_num FROM " + dataset + "")
     a99 = list(cursor)
     a0 = list()
     for item in a99:
@@ -750,16 +777,16 @@ if __name__ == "__main__":
         for j in range(3):
             for k in range(2):
                 print("age = " + str(i) + ", occupation = " + str(j) + ", sex = " + str(k))
-                print("SELECT COUNT(*) FROM AdultData, age_dim, occupation_dim, sex_dim "
+                print("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim "
                                "WHERE "
-                               "AdultData.age=age_dim.\"0\" AND AdultData.sex=sex_dim.\"0\""
-                               " AND AdultData.occupation=occupation_dim.\"0\" "
+                               "" + dataset + ".age=age_dim.\"0\" AND " + dataset + ".sex=sex_dim.\"0\""
+                               " AND " + dataset + ".occupation=occupation_dim.\"0\" "
                                "GROUP BY age_dim.\"" + str(i) + "\", "
                                "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
-                cursor.execute("SELECT COUNT(*) FROM AdultData, age_dim, occupation_dim, sex_dim "
+                cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim "
                                "WHERE "
-                               "AdultData.age=age_dim.\"0\" AND AdultData.sex=sex_dim.\"0\""
-                               " AND AdultData.occupation=occupation_dim.\"0\" "
+                               "" + dataset + ".age=age_dim.\"0\" AND " + dataset + ".sex=sex_dim.\"0\""
+                               " AND " + dataset + ".occupation=occupation_dim.\"0\" "
                                "GROUP BY age_dim.\"" + str(i) + "\", "
                                "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
                 print(list(cursor))
