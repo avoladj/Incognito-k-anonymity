@@ -404,7 +404,6 @@ def graph_generation(Ci, Si, Ei, i):
 
     print("INSERT INTO Si values " + ", ".join(mia_zia))
     """
-
     cursor.execute("SELECT * FROM Si")
     Si_new = set(cursor)
 
