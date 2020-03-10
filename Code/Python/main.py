@@ -414,7 +414,7 @@ def graph_generation(Ci, Si, Ei, i):
     cursor.execute("UPDATE Ci SET dim" + i_here_str + " = 'null', index" + i_here_str +
                    "= 'null' WHERE index" + i_here_str + " is null")
     connection.commit()
-
+    '''''
     help_me = ""
     help_me_now = ""
     help_me_except = ""
@@ -441,41 +441,66 @@ def graph_generation(Ci, Si, Ei, i):
             help_me_except += abc.replace("p", "q")
             if i_is_greater_than_1 and j > 1:
                 help_me_now += "and p.dim" + str_j + " = q.dim" + str_j + " and p.index" + str_j + " = q.index" + str_j + " "
+    '''''
+    select_str = ""
+    select_str_except = ""
+    where_str = ""
+    where_str_except = ""
+    for j in range(2, i_here):
+        if j == i_here-1:
+            select_str += ", p.dim" + str(j) + ", p.index" + str(j) + ", q.dim" + str(j) + ", q.index" + str(j)
+            select_str_except += ", q.dim" + str(j) + ", q.index" + str(j) + ", p.dim" + str(j) + ", p.index" + str(j)
+            where_str_except = where_str + " and p.dim" + str(j) + "<q.dim" + str(j) + " and p.index" + str(j) + \
+                               "!=\"null\" and p.dim" + str(j) + "!=\"null\""
+            where_str += " and p.dim" + str(j) + "<q.dim" + str(j) + " and q.index" + str(j) + "!=\"null\"" \
+                         " and q.dim" + str(j) + "!=\"null\""
+        else:
+            select_str += ", p.dim" + str(j) + ", p.index" + str(j)
+            select_str_except += ", q.dim" + str(j) + ", q.index" + str(j)
+            where_str += " and p.dim" + str(j) + "=q.dim" + str(j) + " and p.index" + str(j) + "=q.index" + str(j)
 
-#TODO: QUERY
-    """
-    
-SELECT null, p.dim1, p.index1, p.ID, q.ID , p.dim2, p.index2, q.dim2, q.index2
-FROM Si p, Si q
-WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and q.index2 != "null" and q.dim2 != "null"
-EXCEPT
-SELECT null, q.dim1, q.index1, p.ID, q.ID , q.dim2, q.index2, p.dim2, p.index2
-FROM Si p, Si q
-WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and p.index2 != "null" and q.dim2 != "null"
+    #TODO: QUERY
 
-    """
+    '''''
+    SELECT null, p.dim1, p.index1, p.ID, q.ID , p.dim2, p.index2, q.dim2, q.index2
+    FROM Si p, Si q
+    WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and q.index2 != "null" and q.dim2 != "null"
+    EXCEPT
+    SELECT null, q.dim1, q.index1, p.ID, q.ID , q.dim2, q.index2, p.dim2, p.index2
+    FROM Si p, Si q
+    WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and p.index2 != "null" and p.dim2 != "null"
+    '''
 
     # join phase. Ci == Ci+1
-    if i_is_greater_than_1:
+    if i>1:
         #cursor.execute("INSERT INTO Ci "
         #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
         #           "FROM Si p, Si q "
         #           "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
-        print("SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " \n"
-                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now +
-                    "\n EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me_except +
-                    "\n FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
+        #print("OLD: SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " \n"
+        #    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now +
+        #      "\n EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me_except +
+        #      "\n FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
+        print("INSERT INTO Ci "
+                    "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
+                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
+                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
+                    " FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
         cursor.execute("INSERT INTO Ci "
-                    "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
-                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now +
-                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me_except +
-                    " FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
+                    "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
+                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
+                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
+                    " FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
 
     else:
         #cursor.execute("INSERT INTO Ci "
         #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
         #           "FROM Si p, Si q "
         #           "WHERE p.index1 = q.index1 and p.dim1 < q.dim1")
+        print("INSERT INTO Ci SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
+                       " FROM Si p, Si q WHERE p.dim1<q.dim1 EXCEPT"
+                       " SELECT null, q.dim1, q.index1, p.ID, q.ID, p.dim1, p.index1"
+                       " FROM Si p, Si q WHERE p.dim1<q.dim1")
         cursor.execute("INSERT INTO Ci SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
                        " FROM Si p, Si q WHERE p.dim1<q.dim1 EXCEPT"
                        " SELECT null, q.dim1, q.index1, p.ID, q.ID, p.dim1, p.index1"
