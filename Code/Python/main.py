@@ -697,7 +697,11 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     #      " WHERE " + 'AND '.join(pairs))
     cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
           " WHERE " + 'AND '.join(pairs) + " LIMIT 20")
-    print((cursor.fetchall()))
+
+    with open("anonymous_table.csv", "w") as anonymous_table:
+        for row in list(cursor):
+            anonymous_table.writelines(','.join(str(x) for x in row) + "\n")
+        anonymous_table.close()
 
 
 class Node:
