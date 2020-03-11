@@ -607,6 +607,7 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     lowest_node = min(Sn, key = lambda t: t[0])
     #lowest_node = list(Sn)[0]
 
+    '''
     max_indexes = list()
     for node in Sn:
         dims_and_indexes = get_dims_and_indexes_of_node(node)
@@ -625,6 +626,7 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
             min_node_id = item[0]
 
     lowest_node = get_lowest_node(Sn, min_node_id)
+    '''
 
     print("Lowest node: " + str(lowest_node))
 
@@ -749,7 +751,7 @@ if __name__ == "__main__":
                                "GROUP BY age_dim.\"" + str(i) + "\", "
                                "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
                 print(list(cursor))
-    """
+    
     cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
                                                        "WHERE "
                                                        "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
@@ -757,7 +759,7 @@ if __name__ == "__main__":
                    ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
              "occupation_dim.\"2\", sex_dim.\"0\", education_num_dim.\"2\" ")
     print(list(cursor))
-
+    """
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
 
@@ -770,6 +772,7 @@ if __name__ == "__main__":
     Sn = list(cursor)
     print("Sn: " + str(Sn))
 
+    """
     for node in Sn:
         print()
         print(str(node))
@@ -780,6 +783,7 @@ if __name__ == "__main__":
                        ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"" + str(node[2]) + "\", "
                        "occupation_dim.\"" + str(node[8]) + "\", sex_dim.\"" + str(node[10]) + "\", education_num_dim.\"" + str(node[6]) + "\" ")
         print(list(cursor))
+    """
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
