@@ -407,12 +407,17 @@ def graph_generation(Ci, Si, Ei, i):
     cursor.execute("SELECT * FROM Si")
     Si_new = set(cursor)
 
+    # in the last iteration are useless the phases because after graph_generation only Si (Sn) is taken
+    # into account
+    if i == len(Q):
+        return
     i_here_str = str(i_here)
     cursor.execute("ALTER TABLE Ci ADD COLUMN dim" + i_here_str + " TEXT")
     cursor.execute("ALTER TABLE Ci ADD COLUMN index" + i_here_str + " INT")
     # UPDATE Ci SET dim2 = 'null', index2 = 'null' WHERE Ci.index2 is null
     cursor.execute("UPDATE Ci SET dim" + i_here_str + " = 'null', index" + i_here_str +
                    "= 'null' WHERE index" + i_here_str + " is null")
+    cursor.execute("DELETE FROM Ci")
     connection.commit()
     '''''
     help_me = ""
@@ -481,11 +486,11 @@ def graph_generation(Ci, Si, Ei, i):
         #    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now +
         #      "\n EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me_except +
         #      "\n FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
-        print("INSERT INTO Ci "
-                    "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
-                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
-                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
-                    " FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
+        print("INSERT INTO Ci \n"
+                    "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " \n"
+                    "FROM Si p, Si q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
+                    "\n EXCEPT \nSELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
+                    "\n FROM Si p, Si q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
         cursor.execute("INSERT INTO Ci "
                     "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
                     "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
@@ -560,10 +565,9 @@ def graph_generation(Ci, Si, Ei, i):
                    "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
 
-    """
     cursor.execute("SELECT * FROM Ei")
-    print(list(cursor))
-
+    print("Ei: " + str(list(cursor)))
+    """
     cursor.execute("SELECT * FROM Si")
     print(list(cursor))
     """
@@ -591,10 +595,11 @@ def basic_incognito_algorithm(priority_queue, Q, k):
     # marked_nodes = {(marked, node_ID)}
     marked_nodes = set()
     map_node_frequency_set = dict()
+    Si = set()
 
     for i in range(1, len(Q) + 1):
         cursor.execute("SELECT * FROM Ci")
-        Si = set(cursor)
+        Si.update(set(cursor))
 
         # these next 3 lines are for practicality
         Ci = set(Si)
@@ -778,6 +783,10 @@ if __name__ == "__main__":
 
     k = int(args.k)
 
+    cursor.execute("SELECT * FROM " + dataset)
+    if k > len(list(cursor)):
+        print("k is invalid")
+        exit(0)
 
     """
     cursor.execute("SELECT DISTINCT " + dataset + ".education_num FROM " + dataset + "")
@@ -819,6 +828,14 @@ if __name__ == "__main__":
                                "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
                 print(list(cursor))
     """
+    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim, education_num_dim "
+                                                       "WHERE "
+                                                       "" + dataset + ".age=age_dim.\"0\" AND " + dataset
+                   + ".sex=sex_dim.\"0\" AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
+                    ".education_num= education_num_dim.\"0\" GROUP BY age_dim.\"1\", occupation_dim.\"0\", sex_dim.\"0\", "
+                    "education_num_dim.\"0\" ")
+    print(list(cursor))
+
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables

@@ -20,5 +20,12 @@
 		"type": "text",
 		"0":["Male","Female"],
 		"1":["Person","Person"]
+	},
+
+	"Disease":{
+
+		"type": "text",
+		"0":["Flu", "Hepatitis", "Bronchitis", "Broken Arm", "Sprained Ankle", "Hang Nail"],
+		"1":["*", "*", "*", "*", "*", "*"]
 	}
 }
