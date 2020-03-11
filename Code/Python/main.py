@@ -125,17 +125,17 @@ def init_C1_and_E1():
             parent1 = get_parent_index_C1(index, 1)
             parent2 = get_parent_index_C1(index, 2)
             tuple = (id, dimension, index, parent1, parent2)
-            cursor.execute("INSERT INTO Ci values (?, ?, ?, ?, ?)", tuple)
+            cursor.execute("INSERT INTO C1 values (?, ?, ?, ?, ?)", tuple)
             if index >= 1:
-                cursor.execute("INSERT INTO Ei values (?, ?)", (id - 1, id))
+                cursor.execute("INSERT INTO E1 values (?, ?)", (id - 1, id))
             id += 1
             index += 1
     connection.commit()
 
     """
-    cursor.execute("SELECT * FROM Ci")
+    cursor.execute("SELECT * FROM C1")
     print(list(cursor))
-    cursor.execute("SELECT * FROM Ei")
+    cursor.execute("SELECT * FROM E1")
     print(list(cursor))
     """
 
@@ -145,8 +145,8 @@ def create_tables_Ci_Ei():
     # autoincrement id starts from 1 by default
     # parent1 == [3], parent2 == [4]
     cursor.execute(
-        "CREATE TABLE IF NOT EXISTS Ci (ID INTEGER PRIMARY KEY, dim1 TEXT, index1 INT, parent1 INT, parent2 INT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS Ei (start INT, end INT)")
+        "CREATE TABLE IF NOT EXISTS C1 (ID INTEGER PRIMARY KEY, dim1 TEXT, index1 INT, parent1 INT, parent2 INT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS E1 (start INT, end INT)")
     connection.commit()
 
 
@@ -245,9 +245,10 @@ def get_dims_and_indexes_of_node(node):
     return list_temp
 
 
-def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, map_frequency_set, node, Q):
-
-    cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ei.start = Ci.ID and Ei.end = " + str(node[0]))
+def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, map_frequency_set, node, Q, i):
+    i_str = str(i)
+    cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE E" + i_str + ".start = C" + i_str +
+                   ".ID and E" + i_str + ".end = " + str(node[0]))
     #parent_nodes = list(cursor)
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
 
@@ -324,25 +325,24 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
     return freq_set
 
 
-def mark_all_direct_generalizations_of_node(marked_nodes, node):
+def mark_all_direct_generalizations_of_node(marked_nodes, node, i):
+    i_str = str(i)
     marked_nodes.add(node[0])
-    cursor.execute("SELECT Ei.end FROM Ci, Ei WHERE ID = Ei.start and ID = " + str(node[0]))
+    cursor.execute("SELECT E" + i_str + ".end FROM C" + i_str + ", E" + i_str + " WHERE ID = E" + i_str +
+                   ".start and ID = " + str(node[0]))
     for node_to_mark in list(cursor):
         marked_nodes.add(node_to_mark[0])
 
 
-def get_height_of_node_by_id(node_to_put):
-    cursor.execute("SELECT * FROM Ci WHERE ID = " + str(node_to_put))
-    return get_height_of_node(list(cursor)[0])
-
-
-def insert_direct_generalization_of_node_in_queue(node, queue):
-    cursor.execute("SELECT Ei.end FROM Ci, Ei WHERE ID = Ei.start and ID = " + str(node[0]))
+def insert_direct_generalization_of_node_in_queue(node, queue, i):
+    i_str = str(i)
+    cursor.execute("SELECT E" + i_str + ".end FROM C" + i_str + ", E" + i_str + " WHERE ID = E" + i_str +
+                   ".start and ID = " + str(node[0]))
     nodes_to_put = set(cursor)
     for node_to_put in nodes_to_put:
         # node_to_put == (ID,) -.-
         node_to_put = node_to_put[0]
-        cursor.execute("SELECT * FROM Ci WHERE ID = " + str(node_to_put))
+        cursor.execute("SELECT * FROM C" + i_str + " WHERE ID = " + str(node_to_put))
         node = (list(cursor)[0])
         queue.put_nowait((-get_height_of_node(node), node))
 
@@ -380,31 +380,28 @@ def all_subsets(c, i, Ci):
 
 def graph_generation(Ci, Si, Ei, i):
     i_here = i+1
+    i_str = str(i)
+    ipp_str = str(i+1)
     # to create Si i need all columnnames of Ci
     # PRAGMA returns infos like (0, 'ID', 'INTEGER', 0, None, 1), (1, 'dim1', 'TEXT', 0, None, 0), ...
-    cursor.execute("PRAGMA table_info(Ci)")
+    cursor.execute("PRAGMA table_info(C" + i_str + ")")
     column_infos = list()
     column_infos_from_db = list(cursor)
     for column in column_infos_from_db:
-        column_infos.append(str(column[1]) + " " + str(column[2]))
-    cursor.execute("CREATE TABLE IF NOT EXISTS Si (" + ', '.join(column_infos) + ")")
+        if column[1] == "ID":
+            column_infos.append("ID INTEGER PRIMARY KEY")
+        else:
+            column_infos.append(str(column[1]) + " " + str(column[2]))
+    cursor.execute("CREATE TABLE IF NOT EXISTS S" + i_str + " (" + ', '.join(column_infos) + ")")
+    cursor.execute("CREATE TABLE IF NOT EXISTS C" + ipp_str + " (" + ', '.join(column_infos) + ")")
     connection.commit()
     question_marks = ""
     for j in range(0, len(column_infos_from_db) - 1):
         question_marks += " ?,"
     question_marks += " ? "
-    cursor.executemany("INSERT INTO Si values (" + question_marks + ")", Si)
+    cursor.executemany("INSERT INTO S" + i_str + " values (" + question_marks + ")", Si)
 
-    """
-    serve per console sqlite database pycharm 
-    mia_zia = list()
-    for tupla in Si:
-        mia_zia.append("(" + str(tupla[0]) + " ," + str(tupla[1]) + " ," + str(tupla[2]) + " ," +
-                       str(tupla[3]) + " ," + str(tupla[4]) + ")")
-
-    print("INSERT INTO Si values " + ", ".join(mia_zia))
-    """
-    cursor.execute("SELECT * FROM Si")
+    cursor.execute("SELECT * FROM S" + i_str + "")
     Si_new = set(cursor)
 
     # in the last iteration are useless the phases because after graph_generation only Si (Sn) is taken
@@ -412,41 +409,12 @@ def graph_generation(Ci, Si, Ei, i):
     if i == len(Q):
         return
     i_here_str = str(i_here)
-    cursor.execute("ALTER TABLE Ci ADD COLUMN dim" + i_here_str + " TEXT")
-    cursor.execute("ALTER TABLE Ci ADD COLUMN index" + i_here_str + " INT")
+    cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN dim" + i_here_str + " TEXT")
+    cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN index" + i_here_str + " INT")
     # UPDATE Ci SET dim2 = 'null', index2 = 'null' WHERE Ci.index2 is null
-    cursor.execute("UPDATE Ci SET dim" + i_here_str + " = 'null', index" + i_here_str +
+    cursor.execute("UPDATE C" + ipp_str + " SET dim" + i_here_str + " = 'null', index" + i_here_str +
                    "= 'null' WHERE index" + i_here_str + " is null")
-    cursor.execute("DELETE FROM Ci")
     connection.commit()
-    '''''
-    help_me = ""
-    help_me_now = ""
-    help_me_except = ""
-    help_me_now_except = ""
-    # j starts from 1, but here the indexes of 'dim' and 'index' are 2 => j = 2, indexes = 3 ...
-    # if i > 1 otherwise I have p.dim1 = q.dim1 and p.dim1 < q.dim1 ._.
-    i_is_greater_than_1 = i > 1
-    for j in range(1, i_here):
-        indexes = j + 1
-        if indexes == i_here:
-            str_j = str(j)
-            abc = ", q.dim" + str_j + ", q.index" + str_j
-            help_me += abc
-            help_me_except += abc.replace("q", "p")
-            if i_is_greater_than_1:
-                qwe =  " and q.dim" + str_j + " != \"null\" and q.index" + str_j + " != \"null\""
-                help_me_now += "and p.dim" + str_j + " < q.dim" + str_j + qwe
-                help_me_now_except += qwe.replace("q", "p")
-
-        else:
-            str_j = str(indexes)
-            abc = ", p.dim" + str_j + ", p.index" + str_j
-            help_me += abc
-            help_me_except += abc.replace("p", "q")
-            if i_is_greater_than_1 and j > 1:
-                help_me_now += "and p.dim" + str_j + " = q.dim" + str_j + " and p.index" + str_j + " = q.index" + str_j + " "
-    '''''
     select_str = ""
     select_str_except = ""
     where_str = ""
@@ -464,56 +432,28 @@ def graph_generation(Ci, Si, Ei, i):
             select_str_except += ", q.dim" + str(j) + ", q.index" + str(j)
             where_str += " and p.dim" + str(j) + "=q.dim" + str(j) + " and p.index" + str(j) + "=q.index" + str(j)
 
-    #TODO: QUERY
-
-    '''''
-    SELECT null, p.dim1, p.index1, p.ID, q.ID , p.dim2, p.index2, q.dim2, q.index2
-    FROM Si p, Si q
-    WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and q.index2 != "null" and q.dim2 != "null"
-    EXCEPT
-    SELECT null, q.dim1, q.index1, p.ID, q.ID , q.dim2, q.index2, p.dim2, p.index2
-    FROM Si p, Si q
-    WHERE p.dim1 = q.dim1 and p.index1 = q.index1 and p.dim2 < q.dim2 and p.index2 != "null" and p.dim2 != "null"
-    '''
-
     # join phase. Ci == Ci+1
     if i>1:
-        #cursor.execute("INSERT INTO Ci "
-        #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
-        #           "FROM Si p, Si q "
-        #           "WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
-        #print("OLD: SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " \n"
-        #    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now +
-        #      "\n EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + help_me_except +
-        #      "\n FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + help_me_now)
-        print("INSERT INTO Ci \n"
+        print("INSERT INTO C" + ipp_str + " \n"
                     "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " \n"
-                    "FROM Si p, Si q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
+                    "FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
                     "\n EXCEPT \nSELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
-                    "\n FROM Si p, Si q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
-        cursor.execute("INSERT INTO Ci "
+                    "\n FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
+        cursor.execute("INSERT INTO C" + ipp_str + " "
                     "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
-                    "FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
+                    "FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
                     " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
-                    " FROM Si p, Si q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
+                    " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
 
     else:
-        #cursor.execute("INSERT INTO Ci "
-        #           "SELECT null, p.dim1, p.index1, p.ID, q.ID " + help_me + " "
-        #           "FROM Si p, Si q "
-        #           "WHERE p.index1 = q.index1 and p.dim1 < q.dim1")
-        print("INSERT INTO Ci SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
-                       " FROM Si p, Si q WHERE p.dim1<q.dim1 EXCEPT"
+        cursor.execute("INSERT INTO C" + ipp_str + " SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
+                       " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1 EXCEPT"
                        " SELECT null, q.dim1, q.index1, p.ID, q.ID, p.dim1, p.index1"
-                       " FROM Si p, Si q WHERE p.dim1<q.dim1")
-        cursor.execute("INSERT INTO Ci SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
-                       " FROM Si p, Si q WHERE p.dim1<q.dim1 EXCEPT"
-                       " SELECT null, q.dim1, q.index1, p.ID, q.ID, p.dim1, p.index1"
-                       " FROM Si p, Si q WHERE p.dim1<q.dim1")
+                       " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1")
 
-    cursor.execute("SELECT * FROM Ci")
+    cursor.execute("SELECT * FROM C" + ipp_str + "")
     print("Ci: " + str(list(cursor)))
-    cursor.execute("SELECT * FROM Ci")
+    cursor.execute("SELECT * FROM C" + ipp_str + "")
     Ci_new = set(cursor)
 
     Ci_map = dict()
@@ -543,14 +483,15 @@ def graph_generation(Ci, Si, Ei, i):
                 cursor.execute("DELETE FROM Ei WHERE Ei.start = " + node_id)
                 '''
 
-    cursor.execute("SELECT * FROM Ci")
+    cursor.execute("SELECT * FROM C" + ipp_str + "")
     print("Pruned: " + str(list(cursor)))
 
     # edge generation
-    cursor.execute("INSERT INTO Ei "
+    cursor.execute("CREATE TABLE IF NOT EXISTS E" + ipp_str + " (start INT, end INT)")
+    cursor.execute("INSERT INTO E" + ipp_str + " "
                    "WITH CandidatesEdges(start, end) AS ("
                    "SELECT p.ID, q.ID "
-                   "FROM Ci p,Ci q,Ei e,Ei f "
+                   "FROM C" + i_str + " p,C" + i_str + " q,E" + i_str + " e,E" + i_str + " f "
                    "WHERE (e.start = p.parent1 and e.end = q.parent1 "
                    "and f.start = p.parent2 and f.end = q.parent2) "
                    "or (e.start = p.parent1 and e.end = q.parent1 "
@@ -565,15 +506,8 @@ def graph_generation(Ci, Si, Ei, i):
                    "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
 
-    cursor.execute("SELECT * FROM Ei")
-    print("Ei: " + str(list(cursor)))
-    """
-    cursor.execute("SELECT * FROM Si")
-    print(list(cursor))
-    """
-    if i != len(Q):
-        cursor.execute("DROP TABLE Si")
-        connection.commit()
+    cursor.execute("SELECT * FROM E" + ipp_str + "")
+    print("E" + ipp_str + ": " + str(list(cursor)))
 
 
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
@@ -595,21 +529,21 @@ def basic_incognito_algorithm(priority_queue, Q, k):
     # marked_nodes = {(marked, node_ID)}
     marked_nodes = set()
     map_node_frequency_set = dict()
-    Si = set()
 
     for i in range(1, len(Q) + 1):
-        cursor.execute("SELECT * FROM Ci")
-        Si.update(set(cursor))
+        i_str = str(i)
+        cursor.execute("SELECT * FROM C" + i_str + "")
+        Si = set(cursor)
 
         # these next 3 lines are for practicality
         Ci = set(Si)
-        cursor.execute("SELECT * FROM Ei")
+        cursor.execute("SELECT * FROM E" + i_str + "")
         Ei = set(cursor)
 
         # no edge directed to a node => root
-        cursor.execute("SELECT Ci.* FROM Ci, Ei WHERE Ci.ID = Ei.start "
+        cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE C" + i_str + ".ID = E" + i_str + ".start "
                        "EXCEPT "
-                       "SELECT Ci.* FROM Ci, Ei WHERE Ci.ID = Ei.end ")
+                       "SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE C" + i_str + ".ID = E" + i_str + ".end ")
         roots = set(cursor)
         roots_in_queue = set()
 
@@ -633,15 +567,15 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     print("Freq_set root for " + str(node) + ": " + str(frequency_set))
                 else:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(
-                        Ei, map_node_frequency_set, node, Q)
+                        Ei, map_node_frequency_set, node, Q, i)
                     print("Freq_set for " + str(node) + ": " + str(frequency_set))
                     map_node_frequency_set[node] = frequency_set
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
                     print("NODE " + str(node) + " IS ANONYMOUS")
-                    mark_all_direct_generalizations_of_node(marked_nodes, node)
+                    mark_all_direct_generalizations_of_node(marked_nodes, node, i)
                 else:
                     Si.remove(node)
-                    insert_direct_generalization_of_node_in_queue(node, queue)
+                    insert_direct_generalization_of_node_in_queue(node, queue, i)
 
         graph_generation(Ci, Si, Ei, i)
 
@@ -828,14 +762,13 @@ if __name__ == "__main__":
                                "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
                 print(list(cursor))
     """
-    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim, education_num_dim "
+    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
                                                        "WHERE "
-                                                       "" + dataset + ".age=age_dim.\"0\" AND " + dataset
-                   + ".sex=sex_dim.\"0\" AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
-                    ".education_num= education_num_dim.\"0\" GROUP BY age_dim.\"1\", occupation_dim.\"0\", sex_dim.\"0\", "
-                    "education_num_dim.\"0\" ")
+                                                       "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
+                   ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
+                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
+             "occupation_dim.\"1\", sex_dim.\"0\", education_num_dim.\"0\" ")
     print(list(cursor))
-
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
@@ -845,7 +778,7 @@ if __name__ == "__main__":
     # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
     basic_incognito_algorithm(queue.PriorityQueue(), Q, k)
 
-    cursor.execute("SELECT * FROM Si")
+    cursor.execute("SELECT * FROM S" + str(len(Q)))
     Sn = list(cursor)
     print("Sn: " + str(Sn))
 
