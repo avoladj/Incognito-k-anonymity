@@ -491,7 +491,7 @@ def graph_generation(Ci, Si, Ei, i):
     cursor.execute("INSERT INTO E" + ipp_str + " "
                    "WITH CandidatesEdges(start, end) AS ("
                    "SELECT p.ID, q.ID "
-                   "FROM C" + i_str + " p,C" + i_str + " q,E" + i_str + " e,E" + i_str + " f "
+                   "FROM C" + ipp_str + " p,C" + ipp_str + " q,E" + i_str + " e,E" + i_str + " f "
                    "WHERE (e.start = p.parent1 and e.end = q.parent1 "
                    "and f.start = p.parent2 and f.end = q.parent2) "
                    "or (e.start = p.parent1 and e.end = q.parent1 "
@@ -578,6 +578,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     insert_direct_generalization_of_node_in_queue(node, queue, i)
 
         graph_generation(Ci, Si, Ei, i)
+        marked_nodes = set()
 
 
 def node_contains_all_qi(node, dims_and_indexes):
@@ -766,8 +767,8 @@ if __name__ == "__main__":
                                                        "WHERE "
                                                        "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
                    ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
-                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
-             "occupation_dim.\"1\", sex_dim.\"0\", education_num_dim.\"0\" ")
+                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"2\", "
+             "occupation_dim.\"1\", sex_dim.\"0\", education_num_dim.\"2\" ")
     print(list(cursor))
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate

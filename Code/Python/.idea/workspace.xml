@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="97909e0e-e8b0-4629-88d7-f0d0864c1e25" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dimension_tables.json" beforeDir="false" afterPath="$PROJECT_DIR$/dimension_tables.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -161,7 +160,8 @@
       <workItem from="1583763325739" duration="6868000" />
       <workItem from="1583832212975" duration="5674000" />
       <workItem from="1583851480452" duration="732000" />
-      <workItem from="1583920589475" duration="7946000" />
+      <workItem from="1583920589475" duration="8346000" />
+      <workItem from="1583946148501" duration="883000" />
     </task>
     <task id="LOCAL-00001" summary="starting incognito">
       <created>1582196134572</created>
@@ -310,7 +310,14 @@
       <option name="project" value="LOCAL" />
       <updated>1583926714214</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="C1C2C3">
+      <created>1583930077899</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1583930077899</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -351,9 +358,27 @@
     <MESSAGE value="fixing query" />
     <MESSAGE value="fixing query 2.0" />
     <MESSAGE value="bugfixing" />
-    <option name="LAST_COMMIT_MESSAGE" value="bugfixing" />
+    <MESSAGE value="C1C2C3" />
+    <option name="LAST_COMMIT_MESSAGE" value="C1C2C3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <condition expression="node[0] == 6" language="Python" />
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>562</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>776</line>
+          <option name="timeStamp" value="14" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1583929935697" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1583947031431" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
