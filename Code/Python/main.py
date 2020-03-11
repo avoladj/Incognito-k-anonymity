@@ -668,19 +668,6 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
         anonymous_table.close()
 
 
-class Node:
-
-    id = 0
-    dims_and_indexes = dict()
-    parent1 = 0
-    parent2 = 0
-
-    frequency_set = set()
-    height = 0
-
-    next_node_ids = list()
-
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Insert path and filename of QI, "
@@ -767,8 +754,8 @@ if __name__ == "__main__":
                                                        "WHERE "
                                                        "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
                    ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
-                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"2\", "
-             "occupation_dim.\"1\", sex_dim.\"0\", education_num_dim.\"2\" ")
+                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
+             "occupation_dim.\"2\", sex_dim.\"0\", education_num_dim.\"2\" ")
     print(list(cursor))
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
@@ -782,6 +769,17 @@ if __name__ == "__main__":
     cursor.execute("SELECT * FROM S" + str(len(Q)))
     Sn = list(cursor)
     print("Sn: " + str(Sn))
+
+    for node in Sn:
+        print()
+        print(str(node))
+        cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
+                                                           "WHERE "
+                                                           "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
+                       ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
+                       ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"" + str(node[2]) + "\", "
+                       "occupation_dim.\"" + str(node[8]) + "\", sex_dim.\"" + str(node[10]) + "\", education_num_dim.\"" + str(node[6]) + "\" ")
+        print(list(cursor))
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
