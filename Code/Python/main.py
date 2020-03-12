@@ -765,19 +765,6 @@ if __name__ == "__main__":
                        "occupation_dim.\"" + str(node[8]) + "\", sex_dim.\"" + str(node[10]) + "\", education_num_dim.\"" + str(node[6]) + "\" ")
         print(list(cursor))
     """
-    print("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
-                    "WHERE "
-                    "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
-                   ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
-                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
-                   "occupation_dim.\"2\", sex_dim.\"0\", education_num_dim.\"2\"")
-    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
-                    "WHERE "
-                    "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
-                   ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
-                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
-                   "occupation_dim.\"2\", sex_dim.\"0\", education_num_dim.\"2\"")
-    print(list(cursor))
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
