@@ -315,7 +315,7 @@ def mark_all_direct_generalizations_of_node(marked_nodes, node, i):
         marked_nodes.add(node_to_mark[0])
 
 
-def insert_direct_generalization_of_node_in_queue(node, queue, i):
+def insert_direct_generalization_of_node_in_queue(node, queue, i, Si):
     i_str = str(i)
     cursor.execute("SELECT E" + i_str + ".end FROM C" + i_str + ", E" + i_str + " WHERE ID = E" + i_str +
                    ".start and ID = " + str(node[0]))
@@ -323,6 +323,8 @@ def insert_direct_generalization_of_node_in_queue(node, queue, i):
     for node_to_put in nodes_to_put:
         # node_to_put == (ID,) -.-
         node_to_put = node_to_put[0]
+        if nodes_to_put not in Si:
+            continue
         cursor.execute("SELECT * FROM C" + i_str + " WHERE ID = " + str(node_to_put))
         node = (list(cursor)[0])
         queue.put_nowait((-get_height_of_node(node), node))
@@ -556,7 +558,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     mark_all_direct_generalizations_of_node(marked_nodes, node, i)
                 else:
                     Si.remove(node)
-                    insert_direct_generalization_of_node_in_queue(node, queue, i)
+                    insert_direct_generalization_of_node_in_queue(node, queue, i, Si)
 
         graph_generation(Ci, Si, Ei, i)
         marked_nodes = set()
