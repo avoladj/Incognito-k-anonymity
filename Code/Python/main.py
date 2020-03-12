@@ -15,10 +15,7 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
             if not line.startswith("|") and re.search(".:.", line) is not None:
                 split = line.split(":")
                 name_and_type_of_attribute_to_append = split[0].strip().replace("-", "_")
-                if split[1].strip() == "continuous.":
-                    name_and_type_of_attribute_to_append += " REAL"
-                else:
-                    name_and_type_of_attribute_to_append += " TEXT"
+                name_and_type_of_attribute_to_append += " TEXT"
                 attributes.append(name_and_type_of_attribute_to_append)
     # insert records in adult.data in table " + dataset + "
     with open(path_to_datasets + dataset + ".data", "r") as dataset_data:
@@ -37,9 +34,7 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
             new_values = list()
             for value in values:
                 value = value.strip()
-                if value.isnumeric():
-                    value = float(value)
-                elif value.__contains__("-"):
+                if value.__contains__("-"):
                     value = value.replace("-", "_")
                 new_values.append(value)
 
@@ -74,36 +69,22 @@ def create_dimension_tables(tables):
         # create SQL table
         columns = list()
         for i in tables[qi]:
-            if i == "type":
-                continue
-            columns.append("'" + i + "' " + tables[qi]["type"])
+            columns.append("'" + i + "' TEXT")
         cursor.execute("CREATE TABLE IF NOT EXISTS " + qi + "_dim (" + ", ".join(columns) + ")")
         connection.commit()
 
         # insert values into the newly created table
         rows = list()
-        if tables[qi]["type"] == "text":
-            for i in range(len(tables[qi]["1"])):
-                row = "("
-                for j in tables[qi]:
-                    if j == "type":
-                        continue
-                    row += "'" + str(tables[qi][j][i]) + "', "
-                row = row[:-2] + ")"
-                rows.append(row)
-            cursor.execute("INSERT INTO " + qi + "_dim VALUES " + ", ".join(rows))
-            connection.commit()
-        else:
-            for i in range(len(tables[qi]["1"])):
-                row = "("
-                for j in tables[qi]:
-                    if j == "type":
-                        continue
-                    row += str(tables[qi][j][i]) + ", "
-                row = row[:-2] + ")"
-                rows.append(row)
-            cursor.execute("INSERT INTO " + qi + "_dim VALUES " + ", ".join(rows))
-            connection.commit()
+        for i in range(len(tables[qi]["1"])):
+            row = "("
+            for j in tables[qi]:
+                if j == "type":
+                    continue
+                row += "'" + str(tables[qi][j][i]) + "', "
+            row = row[:-2] + ")"
+            rows.append(row)
+        cursor.execute("INSERT INTO " + qi + "_dim VALUES " + ", ".join(rows))
+        connection.commit()
 
 
 def get_parent_index_C1(index, parent1_or_parent2):
@@ -784,6 +765,19 @@ if __name__ == "__main__":
                        "occupation_dim.\"" + str(node[8]) + "\", sex_dim.\"" + str(node[10]) + "\", education_num_dim.\"" + str(node[6]) + "\" ")
         print(list(cursor))
     """
+    print("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
+                    "WHERE "
+                    "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
+                   ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
+                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
+                   "occupation_dim.\"2\", sex_dim.\"0\", education_num_dim.\"2\"")
+    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
+                    "WHERE "
+                    "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
+                   ".sex=sex_dim.\"0\"  AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
+                   ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
+                   "occupation_dim.\"2\", sex_dim.\"0\", education_num_dim.\"2\"")
+    print(list(cursor))
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
