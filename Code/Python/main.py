@@ -199,7 +199,7 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(node, Q):
         dimension_table_names.append(dimension_table)
         where_items.append(where_item)
 
-    print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM " + dataset + " GROUP BY " + ', '.join(attributes))
+    #print("SELECT COUNT(*), " + ', '.join(attributes) + " FROM " + dataset + " GROUP BY " + ', '.join(attributes))
     cursor.execute("SELECT COUNT(*) FROM " + dataset + ", " + ', '.join(dimension_table_names) +
                    " WHERE " + 'and '.join(where_items) + " GROUP BY " + ', '.join(group_by_attributes))
     freq_set = list()
@@ -280,11 +280,11 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(Ei, m
         where_items.append(where_item)
         dimension_table_names.append(dimension_table)
 
-    print("INSERT INTO TempTable "
-                   "SELECT COUNT(*) as count, " + ', '.join(select_items) +
-                   " FROM " + dataset + ", " + ', '.join(dimension_table_names) +
-                   " WHERE " + 'and '.join(where_items) +
-                   " GROUP BY " + ', '.join(group_by_attributes))
+    #print("INSERT INTO TempTable "
+    #               "SELECT COUNT(*) as count, " + ', '.join(select_items) +
+    #               " FROM " + dataset + ", " + ', '.join(dimension_table_names) +
+    #               " WHERE " + 'and '.join(where_items) +
+    #               " GROUP BY " + ', '.join(group_by_attributes))
     cursor.execute("INSERT INTO TempTable "
                    "SELECT COUNT(*) as count, " + ', '.join(select_items) +
                    " FROM " + dataset + ", " + ', '.join(dimension_table_names) +
@@ -320,11 +320,17 @@ def insert_direct_generalization_of_node_in_queue(node, queue, i, Si):
     cursor.execute("SELECT E" + i_str + ".end FROM C" + i_str + ", E" + i_str + " WHERE ID = E" + i_str +
                    ".start and ID = " + str(node[0]))
     nodes_to_put = set(cursor)
+
+    Si_indices = set()
+    for node in Si:
+        Si_indices.add(node[0])
+
     for node_to_put in nodes_to_put:
         # node_to_put == (ID,) -.-
-        node_to_put = node_to_put[0]
-        if nodes_to_put not in Si:
+        if node_to_put not in Si_indices:
             continue
+        node_to_put = node_to_put[0]
+        #print("Evaluating node " + str(node_to_put))
         cursor.execute("SELECT * FROM C" + i_str + " WHERE ID = " + str(node_to_put))
         node = (list(cursor)[0])
         queue.put_nowait((-get_height_of_node(node), node))
@@ -417,11 +423,11 @@ def graph_generation(Ci, Si, Ei, i):
 
     # join phase. Ci == Ci+1
     if i>1:
-        print("INSERT INTO C" + ipp_str + " \n"
-                    "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " \n"
-                    "FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
-                    "\n EXCEPT \nSELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
-                    "\n FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
+        #print("INSERT INTO C" + ipp_str + " \n"
+        #            "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " \n"
+        #            "FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
+        #            "\n EXCEPT \nSELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
+        #            "\n FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
         cursor.execute("INSERT INTO C" + ipp_str + " "
                     "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
                     "FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
@@ -466,8 +472,8 @@ def graph_generation(Ci, Si, Ei, i):
                 cursor.execute("DELETE FROM Ei WHERE Ei.start = " + node_id)
                 '''
 
-    cursor.execute("SELECT * FROM C" + ipp_str + "")
-    print("Pruned: " + str(list(cursor)))
+    #cursor.execute("SELECT * FROM C" + ipp_str + "")
+    #print("Pruned: " + str(list(cursor)))
 
     # edge generation
     cursor.execute("CREATE TABLE IF NOT EXISTS E" + ipp_str + " (start INT, end INT)")
@@ -557,6 +563,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     print("NODE " + str(node) + " IS ANONYMOUS")
                     mark_all_direct_generalizations_of_node(marked_nodes, node, i)
                 else:
+                    print("NODE " + str(node) + " IS NOT ANONYMOUS")
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue, i, Si)
 
