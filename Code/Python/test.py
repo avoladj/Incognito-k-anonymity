@@ -12,7 +12,7 @@ def execute(k):
         print()
         print("Execution time with " + i_str + " QIs and k= " + k_str + ": " + str(stop - start))
         print()
-        print("Wait for 3 seconds...")
+        print("Waiting for 3 seconds...\n")
         time.sleep(3)
 
 

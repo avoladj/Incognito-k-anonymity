@@ -504,6 +504,8 @@ def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
     Relation T is said to satisfy the k-anonymity property (or to be k-anonymous) with respect to attribute set A if
     every count in the frequency set of T with respect to A is greater than or equal to k
     """
+    if len(frequency_set) == 0:
+        return False
     for count in frequency_set:
         if type(count) == tuple:
             count = count[0]
