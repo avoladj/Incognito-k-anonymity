@@ -1,3 +1,4 @@
 .idea/
-Code/Python/.idea
+Code/Python/.idea/*
 Code/Python/venv
+Code/Python/anonymous_table.csv

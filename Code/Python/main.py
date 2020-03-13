@@ -409,17 +409,18 @@ def graph_generation(Ci, Si, Ei, i):
     where_str = ""
     where_str_except = ""
     for j in range(2, i_here):
+        j_str = str(j)
         if j == i_here-1:
-            select_str += ", p.dim" + str(j) + ", p.index" + str(j) + ", q.dim" + str(j) + ", q.index" + str(j)
-            select_str_except += ", q.dim" + str(j) + ", q.index" + str(j) + ", p.dim" + str(j) + ", p.index" + str(j)
-            where_str_except = where_str + " and p.dim" + str(j) + "<q.dim" + str(j) + " and p.index" + str(j) + \
-                               "!=\"null\" and p.dim" + str(j) + "!=\"null\""
-            where_str += " and p.dim" + str(j) + "<q.dim" + str(j) + " and q.index" + str(j) + "!=\"null\"" \
-                         " and q.dim" + str(j) + "!=\"null\""
+            select_str += ", p.dim" + j_str + ", p.index" + j_str + ", q.dim" + j_str + ", q.index" + j_str
+            select_str_except += ", q.dim" + j_str + ", q.index" + j_str + ", p.dim" + j_str + ", p.index" + j_str
+            where_str_except = where_str + " and p.dim" + j_str + "<q.dim" + j_str + " and p.index" + j_str + \
+                               "!=\"null\" and p.dim" + j_str + "!=\"null\""
+            where_str += " and p.dim" + j_str + "<q.dim" + j_str + " and q.index" + j_str + "!=\"null\"" \
+                         " and q.dim" + j_str + "!=\"null\""
         else:
-            select_str += ", p.dim" + str(j) + ", p.index" + str(j)
-            select_str_except += ", q.dim" + str(j) + ", q.index" + str(j)
-            where_str += " and p.dim" + str(j) + "=q.dim" + str(j) + " and p.index" + str(j) + "=q.index" + str(j)
+            select_str += ", p.dim" + j_str + ", p.index" + j_str
+            select_str_except += ", q.dim" + j_str + ", q.index" + j_str
+            where_str += " and p.dim" + j_str + "=q.dim" + j_str + " and p.index" + j_str + "=q.index" + j_str
 
     # join phase. Ci == Ci+1
     if i>1:
