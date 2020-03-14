@@ -725,26 +725,30 @@ if __name__ == "__main__":
     print(a1)
     print(a2)
     print()
-    """
-    """
+    
     for i in range(3):
         for j in range(3):
             for k in range(2):
-                print("age = " + str(i) + ", occupation = " + str(j) + ", sex = " + str(k))
-                print("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim "
-                               "WHERE "
-                               "" + dataset + ".age=age_dim.\"0\" AND " + dataset + ".sex=sex_dim.\"0\""
-                               " AND " + dataset + ".occupation=occupation_dim.\"0\" "
-                               "GROUP BY age_dim.\"" + str(i) + "\", "
-                               "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
-                cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim "
-                               "WHERE "
-                               "" + dataset + ".age=age_dim.\"0\" AND " + dataset + ".sex=sex_dim.\"0\""
-                               " AND " + dataset + ".occupation=occupation_dim.\"0\" "
-                               "GROUP BY age_dim.\"" + str(i) + "\", "
-                               "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\" ")
-                print(list(cursor))
-    
+	            for l in range(3):
+	                print("age = " + str(i) + ", occupation = " + str(j) + " education_num = " + str(l) + ", sex = " + str(k))
+	                print("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim, education_num_dim "
+	                               "WHERE "
+	                               "" + dataset + ".age=age_dim.\"0\" AND " + dataset + ".sex=sex_dim.\"0\""
+	                               " AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
+	                                ".education_num=education_num_dim.\"0\" "
+	                               "GROUP BY age_dim.\"" + str(i) + "\", "
+	                               "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\", "
+                                  "education_num_dim.\"" + str(l) + "\"")
+	                cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, occupation_dim, sex_dim, education_num_dim "
+	                               "WHERE "
+	                               "" + dataset + ".age=age_dim.\"0\" AND " + dataset + ".sex=sex_dim.\"0\""
+	                               " AND " + dataset + ".occupation=occupation_dim.\"0\" AND " + dataset +
+	                                ".education_num=education_num_dim.\"0\" "
+	                               "GROUP BY age_dim.\"" + str(i) + "\", "
+	                               "occupation_dim.\"" + str(j) + "\", sex_dim.\"" + str(k) + "\", "
+                                  "education_num_dim.\"" + str(l) + "\"")
+	                print(list(cursor))
+
     cursor.execute("SELECT COUNT(*) FROM " + dataset + ", age_dim, education_num_dim, occupation_dim, sex_dim "
                                                        "WHERE "
                                                        "" + dataset + ".age=age_dim.\"0\" AND " + dataset +
@@ -752,7 +756,7 @@ if __name__ == "__main__":
                    ".education_num=education_num_dim.\"0\" GROUP BY age_dim.\"1\", "
              "occupation_dim.\"2\", sex_dim.\"0\", education_num_dim.\"2\" ")
     print(list(cursor))
-    """
+	"""
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
 
