@@ -78,8 +78,6 @@ def create_dimension_tables(tables):
         for i in range(len(tables[qi]["1"])):
             row = "("
             for j in tables[qi]:
-                if j == "type":
-                    continue
                 row += "'" + str(tables[qi][j][i]) + "', "
             row = row[:-2] + ")"
             rows.append(row)
@@ -424,21 +422,21 @@ def graph_generation(Ci, Si, Ei, i):
 
     # join phase. Ci == Ci+1
     if i>1:
-        #print("INSERT INTO C" + ipp_str + " \n"
-        #            "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " \n"
-        #            "FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
-        #            "\n EXCEPT \nSELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
-        #            "\n FROM S" + i_str + " p, S" + i_str + " q\n WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
+        #cursor.execute("INSERT INTO C" + ipp_str + " "
+        #            "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
+        #            "FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
+        #            " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
+        #            " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
         cursor.execute("INSERT INTO C" + ipp_str + " "
-                    "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
-                    "FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str +
-                    " EXCEPT SELECT null, q.dim1, q.index1, p.ID, q.ID " + select_str_except +
-                    " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str_except)
+                        "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
+                        "FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str)
 
     else:
+        #cursor.execute("INSERT INTO C" + ipp_str + " SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
+        #               " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1 EXCEPT"
+        #               " SELECT null, q.dim1, q.index1, p.ID, q.ID, p.dim1, p.index1"
+        #               " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1")
         cursor.execute("INSERT INTO C" + ipp_str + " SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
-                       " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1 EXCEPT"
-                       " SELECT null, q.dim1, q.index1, p.ID, q.ID, p.dim1, p.index1"
                        " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1")
 
     cursor.execute("SELECT * FROM C" + ipp_str + "")
@@ -464,14 +462,13 @@ def graph_generation(Ci, Si, Ei, i):
         Ci_map[tuple(keys)] = c
 
     # prune phase
-    '''
+
     for c in Ci_new:
         for s in all_subsets(c, i, Ci):
             if s in Ci_map.keys() and Ci_map[s] not in Si_new:
                 node_id = str(c[0])
-                cursor.execute("DELETE FROM Ci WHERE Ci.ID = " + node_id)
-                cursor.execute("DELETE FROM Ei WHERE Ei.start = " + node_id)
-                '''
+                cursor.execute("DELETE FROM C" + ipp_str + " WHERE C" + ipp_str + ".ID = " + node_id)
+                cursor.execute("DELETE FROM E" + i_str + " WHERE E" + i_str + ".start = " + node_id)
 
     #cursor.execute("SELECT * FROM C" + ipp_str + "")
     #print("Pruned: " + str(list(cursor)))
