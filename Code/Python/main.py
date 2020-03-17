@@ -306,7 +306,7 @@ def insert_direct_generalization_of_node_in_queue(node, queue, i, Si):
 
     for node_to_put in nodes_to_put:
         # node_to_put == (ID,) -.-
-        if node_to_put not in Si_indices:
+        if node_to_put[0] not in Si_indices:
             continue
         node_to_put = node_to_put[0]
         cursor.execute("SELECT * FROM C" + i_str + " WHERE ID = " + str(node_to_put))
@@ -358,7 +358,7 @@ def graph_generation(Ci, Si, i):
             column_infos.append("ID INTEGER PRIMARY KEY")
         else:
             column_infos.append(str(column[1]) + " " + str(column[2]))
-    cursor.execute("BEGIN TRANSACTION")
+    #cursor.execute("BEGIN TRANSACTION")
     cursor.execute("CREATE TABLE IF NOT EXISTS S" + i_str + " (" + ', '.join(column_infos) + ")")
     cursor.execute("CREATE TABLE IF NOT EXISTS C" + ipp_str + " (" + ', '.join(column_infos) + ")")
     connection.commit()
@@ -394,8 +394,10 @@ def graph_generation(Ci, Si, i):
         if j == i_here-1:
             select_str += ", p.dim" + j_str + ", p.index" + j_str + ", q.dim" + j_str + ", q.index" + j_str
             select_str_except += ", q.dim" + j_str + ", q.index" + j_str + ", p.dim" + j_str + ", p.index" + j_str
-            where_str += " and p.dim" + j_str + "<q.dim" + j_str + " and q.index" + j_str + "!=\"null\"" \
-                         " and q.dim" + j_str + "!=\"null\""
+            where_str += " and p.dim" + j_str + "<q.dim" + j_str
+                         #no more useful
+                         #+ " and q.index" + j_str + "!=\"null\"" \
+                         #" and q.dim" + j_str + "!=\"null\""
         else:
             select_str += ", p.dim" + j_str + ", p.index" + j_str
             select_str_except += ", q.dim" + j_str + ", q.index" + j_str
@@ -454,8 +456,8 @@ def graph_generation(Ci, Si, i):
                    "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
     connection.commit()
-    #cursor.execute("SELECT * FROM E" + ipp_str + "")
-    #print("E" + ipp_str + ": " + str(list(cursor)))
+    cursor.execute("SELECT * FROM E" + ipp_str + "")
+    print("E" + ipp_str + ": " + str(list(cursor)))
 
 
 def get_Ci_map(Ci):
@@ -539,6 +541,9 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     #print("NODE " + str(node) + " IS NOT ANONYMOUS")
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue, i, Si)
+                    cursor.execute("DELETE FROM C" + str(i) + " WHERE ID = " + str(node[0]))
+                    cursor.execute("SELECT COUNT(*) FROM C" + str(i))
+                    print(list(cursor))
 
         graph_generation(Ci, Si, i)
         marked_nodes = set()
@@ -595,8 +600,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     connection = sqlite3.connect(":memory:")
+    #connection = sqlite3.connect("identifier.sqlite")
     cursor = connection.cursor()
     cursor.execute("PRAGMA synchronous = OFF")
+    cursor.execute("PRAGMA cache_size = -256000")
 
     # all attributes of the table
     attributes = list()
@@ -625,7 +632,14 @@ if __name__ == "__main__":
     if k > len(list(cursor)):
         print("k is invalid")
         exit(0)
-
+    """
+    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", Sex_dim, Birthdate_dim, Zipcode_dim "
+                                                       "WHERE "
+                                                       "" + dataset + ".Birthdate=Birthdate_dim.\"0\" AND " + dataset +
+                   ".Sex=Sex_dim.\"0\"  AND " + dataset + ".Zipcode=Zipcode_dim.\"0\" GROUP BY Birthdate_dim.\"1\", "
+                                                          " Sex_dim.\"0\", Zipcode_dim.\"1\" ")
+    print(list(cursor))
+    """
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
 
@@ -636,7 +650,7 @@ if __name__ == "__main__":
 
     cursor.execute("SELECT * FROM S" + str(len(Q)))
     Sn = list(cursor)
-    #print("Sn: " + str(Sn))
+    print("Sn: " + str(Sn))
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
