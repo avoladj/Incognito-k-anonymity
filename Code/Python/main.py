@@ -40,6 +40,7 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
             # a line could be a "\n" => new_values ===== [''] => len(new_values) == 1
             if len(new_values) == 1:
                 continue
+            cursor.execute("BEGIN TRANSACTION")
             cursor.execute("INSERT INTO " + table_name + ' values ({})'.format(new_values)
                            .replace("[", "").replace("]", ""))
             connection.commit()
@@ -80,6 +81,7 @@ def create_dimension_tables(tables):
                 row += "'" + str(tables[qi][j][i]) + "', "
             row = row[:-2] + ")"
             rows.append(row)
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("INSERT INTO " + qi + "_dim VALUES " + ", ".join(rows))
         connection.commit()
 
@@ -263,11 +265,13 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node,
         where_items.append(where_item)
         dimension_table_names.append(dimension_table)
 
+    cursor.execute("BEGIN TRANSACTION")
     cursor.execute("INSERT INTO TempTable "
                    "SELECT COUNT(*) as count, " + ', '.join(select_items) +
                    " FROM " + dataset + ", " + ', '.join(dimension_table_names) +
                    " WHERE " + 'and '.join(where_items) +
                    " GROUP BY " + ', '.join(group_by_attributes))
+    connection.commit()
 
     cursor.execute("SELECT SUM(count) FROM TempTable GROUP BY " + ', '.join(attributes))
     results = list(cursor)
@@ -354,6 +358,7 @@ def graph_generation(Ci, Si, i):
             column_infos.append("ID INTEGER PRIMARY KEY")
         else:
             column_infos.append(str(column[1]) + " " + str(column[2]))
+    cursor.execute("BEGIN TRANSACTION")
     cursor.execute("CREATE TABLE IF NOT EXISTS S" + i_str + " (" + ', '.join(column_infos) + ")")
     cursor.execute("CREATE TABLE IF NOT EXISTS C" + ipp_str + " (" + ', '.join(column_infos) + ")")
     connection.commit()
@@ -361,7 +366,10 @@ def graph_generation(Ci, Si, i):
     for j in range(0, len(column_infos_from_db) - 1):
         question_marks += " ?,"
     question_marks += " ? "
+
+    cursor.execute("BEGIN TRANSACTION")
     cursor.executemany("INSERT INTO S" + i_str + " values (" + question_marks + ")", Si)
+    connection.commit()
 
     cursor.execute("SELECT * FROM S" + i_str + "")
     Si_new = set(cursor)
@@ -371,6 +379,7 @@ def graph_generation(Ci, Si, i):
     if i == len(Q):
         return
     i_here_str = str(i_here)
+    cursor.execute("BEGIN TRANSACTION")
     cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN dim" + i_here_str + " TEXT")
     cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN index" + i_here_str + " INT")
     # UPDATE Ci SET dim2 = 'null', index2 = 'null' WHERE Ci.index2 is null
@@ -394,13 +403,17 @@ def graph_generation(Ci, Si, i):
 
     # join phase. Ci == Ci+1
     if i > 1:
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("INSERT INTO C" + ipp_str + " "
                         "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
                         "FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str)
+        connection.commit()
 
     else:
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("INSERT INTO C" + ipp_str + " SELECT null, p.dim1, p.index1, p.ID, q.ID, q.dim1, q.index1"
                        " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1")
+        connection.commit()
 
     cursor.execute("SELECT * FROM C" + ipp_str + "")
     print("C" + ipp_str + ": " + str(list(cursor)))
@@ -414,12 +427,15 @@ def graph_generation(Ci, Si, i):
         for s in all_subsets(c, i, Ci):
             if s in Ci_map.keys() and Ci_map[s] not in Si_new:
                 node_id = str(c[0])
+                cursor.execute("BEGIN TRANSACTION")
                 cursor.execute("DELETE FROM C" + ipp_str + " WHERE C" + ipp_str + ".ID = " + node_id)
                 cursor.execute("DELETE FROM E" + i_str + " WHERE E" + i_str + ".start = " + node_id +
                                " or E" + i_str + ".end = " + node_id)
+                connection.commit()
 
     # edge generation
     cursor.execute("CREATE TABLE IF NOT EXISTS E" + ipp_str + " (start INT, end INT)")
+    cursor.execute("BEGIN TRANSACTION")
     cursor.execute("INSERT INTO E" + ipp_str + " "
                    "WITH CandidatesEdges(start, end) AS ("
                    "SELECT p.ID, q.ID "
@@ -437,9 +453,9 @@ def graph_generation(Ci, Si, i):
                    "SELECT D1.start, D2.end "
                    "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
-
-    cursor.execute("SELECT * FROM E" + ipp_str + "")
-    print("E" + ipp_str + ": " + str(list(cursor)))
+    connection.commit()
+    #cursor.execute("SELECT * FROM E" + ipp_str + "")
+    #print("E" + ipp_str + ": " + str(list(cursor)))
 
 
 def get_Ci_map(Ci):
@@ -512,15 +528,15 @@ def basic_incognito_algorithm(priority_queue, Q, k):
             if node[0] not in marked_nodes:
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node)
-                    print("Freq_set root for " + str(node) + ": " + str(frequency_set))
+                    #print("Freq_set root for " + str(node) + ": " + str(frequency_set))
                 else:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, i)
-                    print("Freq_set for " + str(node) + ": " + str(frequency_set))
+                    #print("Freq_set for " + str(node) + ": " + str(frequency_set))
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
-                    print("NODE " + str(node) + " IS ANONYMOUS")
+                    #print("NODE " + str(node) + " IS ANONYMOUS")
                     mark_all_direct_generalizations_of_node(marked_nodes, node, i)
                 else:
-                    print("NODE " + str(node) + " IS NOT ANONYMOUS")
+                    #print("NODE " + str(node) + " IS NOT ANONYMOUS")
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue, i, Si)
 
@@ -580,6 +596,7 @@ if __name__ == "__main__":
 
     connection = sqlite3.connect(":memory:")
     cursor = connection.cursor()
+    cursor.execute("PRAGMA synchronous = OFF")
 
     # all attributes of the table
     attributes = list()
@@ -619,7 +636,7 @@ if __name__ == "__main__":
 
     cursor.execute("SELECT * FROM S" + str(len(Q)))
     Sn = list(cursor)
-    print("Sn: " + str(Sn))
+    #print("Sn: " + str(Sn))
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
