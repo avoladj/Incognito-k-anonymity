@@ -46,15 +46,6 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
             connection.commit()
 
 
-def get_quasi_identifiers():
-    Q_temp = set()
-    with open(args.quasi_identifiers, "r") as qi_filename:
-        quasi_identifiers = qi_filename.readline().split(",")
-        for qi in quasi_identifiers:
-            Q_temp.add(qi.strip())
-    return Q_temp
-
-
 def get_dimension_tables():
     json_text = ""
     with open(args.dimension_tables, "r") as dimension_tables_filename:
@@ -173,17 +164,8 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(node):
     for i in range(len(dims_and_indexes_s_node)):
         if dims_and_indexes_s_node[i][0] == "null" or dims_and_indexes_s_node[i][1] == "null":
             continue
-        column_name = dims_and_indexes_s_node[i][0]
-        generalization_level = dims_and_indexes_s_node[i][1]
-        generalization_level_str = str(generalization_level)
-        previous_generalization_level_str = "0"
-
-        dimension_table = column_name + "_dim"
-        dimension_with_previous_generalization_level = dimension_table + ".\"" + previous_generalization_level_str + "\""
-
-        if column_name in attributes:
-            group_by_attributes.remove(column_name)
-            group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
+        column_name, dimension_table, dimension_with_previous_generalization_level, generalization_level_str = prepare_query_parameters(
+            attributes, dims_and_indexes_s_node, group_by_attributes, i)
 
         where_item = "" + dataset + "." + column_name + " = " + dimension_with_previous_generalization_level
 
@@ -244,19 +226,10 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node,
 
     for i in range(len(dims_and_indexes_s_node)):
 
-        if dims_and_indexes_s_node[i][0]  == "null" or dims_and_indexes_s_node[i][1] == "null":
+        if dims_and_indexes_s_node[i][0] == "null" or dims_and_indexes_s_node[i][1] == "null":
             continue
-        column_name = dims_and_indexes_s_node[i][0]
-        generalization_level = dims_and_indexes_s_node[i][1]
-        generalization_level_str = str(generalization_level)
-        previous_generalization_level_str = "0"
-
-        dimension_table = column_name + "_dim"
-        dimension_with_previous_generalization_level = dimension_table + ".\"" + previous_generalization_level_str + "\""
-
-        if column_name in attributes:
-            group_by_attributes.remove(column_name)
-            group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
+        column_name, dimension_table, dimension_with_previous_generalization_level, generalization_level_str = prepare_query_parameters(
+            attributes, dims_and_indexes_s_node, group_by_attributes, i)
 
         select_item = dimension_table + ".\"" + generalization_level_str + "\" AS " + column_name
         where_item = "" + dataset + "." + column_name + " = " + dimension_with_previous_generalization_level
@@ -283,6 +256,19 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node,
     connection.commit()
 
     return freq_set
+
+
+def prepare_query_parameters(attributes, dims_and_indexes_s_node, group_by_attributes, i):
+    column_name = dims_and_indexes_s_node[i][0]
+    generalization_level = dims_and_indexes_s_node[i][1]
+    generalization_level_str = str(generalization_level)
+    previous_generalization_level_str = "0"
+    dimension_table = column_name + "_dim"
+    dimension_with_previous_generalization_level = dimension_table + ".\"" + previous_generalization_level_str + "\""
+    if column_name in attributes:
+        group_by_attributes.remove(column_name)
+        group_by_attributes.add(dimension_table + ".\"" + generalization_level_str + "\"")
+    return column_name, dimension_table, dimension_with_previous_generalization_level, generalization_level_str
 
 
 def mark_all_direct_generalizations_of_node(marked_nodes, node, i):
@@ -314,37 +300,7 @@ def insert_direct_generalization_of_node_in_queue(node, queue, i, Si):
         queue.put_nowait((-get_height_of_node(node), node))
 
 
-def all_subsets(c, i, Ci):
-    my_set = list()
-    # extract only the ids
-    p = 0
-    length = len(c)
-    while True:
-        # 0, 5,6, 8,9, 11,12, ...
-        if p == 0:
-            j = 0
-            my_set.append(c[j])
-        else:
-            j = 5 + 3*(p-1)
-            if j >= length:
-                break
-            tupla = []
-            tupla.append(c[j])
-
-            if j+1 != 1:
-                if j+1 >= length:
-                    break
-                tupla.append(c[j+1])
-            for node in Ci:
-                if tupla[0] != "null" and tupla[0] in node and tupla[1] != "null" and tupla[1] in node and \
-                        node[0] not in my_set:
-                    my_set.append(node[0])
-                    break
-        p += 1
-    return subsets(my_set, i)
-
-
-def graph_generation(Ci, Si, i):
+def graph_generation(Si, i):
     i_here = i+1
     i_str = str(i)
     ipp_str = str(i+1)
@@ -358,7 +314,6 @@ def graph_generation(Ci, Si, i):
             column_infos.append("ID INTEGER PRIMARY KEY")
         else:
             column_infos.append(str(column[1]) + " " + str(column[2]))
-    #cursor.execute("BEGIN TRANSACTION")
     cursor.execute("CREATE TABLE IF NOT EXISTS S" + i_str + " (" + ', '.join(column_infos) + ")")
     cursor.execute("CREATE TABLE IF NOT EXISTS C" + ipp_str + " (" + ', '.join(column_infos) + ")")
     connection.commit()
@@ -373,6 +328,7 @@ def graph_generation(Ci, Si, i):
 
     cursor.execute("SELECT * FROM S" + i_str + "")
     Si_new = set(cursor)
+    print("S" + i_str + ": " + str(Si_new))
 
     # in the last iteration are useless the phases because after graph_generation only Si (Sn) is taken
     # into account
@@ -395,9 +351,6 @@ def graph_generation(Ci, Si, i):
             select_str += ", p.dim" + j_str + ", p.index" + j_str + ", q.dim" + j_str + ", q.index" + j_str
             select_str_except += ", q.dim" + j_str + ", q.index" + j_str + ", p.dim" + j_str + ", p.index" + j_str
             where_str += " and p.dim" + j_str + "<q.dim" + j_str
-                         #no more useful
-                         #+ " and q.index" + j_str + "!=\"null\"" \
-                         #" and q.dim" + j_str + "!=\"null\""
         else:
             select_str += ", p.dim" + j_str + ", p.index" + j_str
             select_str_except += ", q.dim" + j_str + ", q.index" + j_str
@@ -419,8 +372,6 @@ def graph_generation(Ci, Si, i):
 
     cursor.execute("SELECT * FROM C" + ipp_str + "")
     print("C" + ipp_str + ": " + str(list(cursor)))
-    cursor.execute("SELECT * FROM S" + i_str + "")
-    print("S" + i_str + ": " + str(list(cursor)))
     cursor.execute("SELECT * FROM E" + i_str + "")
     print("E" + i_str + ": " + str(list(cursor)))
 
@@ -470,26 +421,6 @@ def graph_generation(Ci, Si, i):
     print("E" + ipp_str + ": " + str(list(cursor)))
 
 
-def get_Ci_map(Ci):
-    Ci_map = dict()
-    for c in Ci:
-        keys = list()
-        t = 0
-        length = len(c)
-        while True:
-            if t == 0:
-                r = 0
-            else:
-                r = 4 + 3 * (t - 1)
-            if r >= length:
-                break
-            if c[r] != "null":
-                keys.append(c[r])
-            t += 1
-        Ci_map[tuple(keys)] = c
-    return Ci_map
-
-
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
     """
     Relation T is said to satisfy the k-anonymity property (or to be k-anonymous) with respect to attribute set A if
@@ -515,7 +446,6 @@ def basic_incognito_algorithm(priority_queue, Q, k):
         i_str = str(i)
         cursor.execute("SELECT * FROM C" + i_str + "")
         Si = set(cursor)
-        Ci = set(Si)
 
         # no edge directed to a node => root
         cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE C" + i_str + ".ID = E" + i_str + ".start "
@@ -525,7 +455,6 @@ def basic_incognito_algorithm(priority_queue, Q, k):
         roots_in_queue = set()
 
         for node in roots:
-            # height = 0 because these nodes are roots
             height = get_height_of_node(node)
             # -height because priority queue shows the lowest first. Syntax: (priority number, data)
             roots_in_queue.add((-height, node))
@@ -540,22 +469,16 @@ def basic_incognito_algorithm(priority_queue, Q, k):
             if node[0] not in marked_nodes:
                 if node in roots:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node)
-                    #print("Freq_set root for " + str(node) + ": " + str(frequency_set))
                 else:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, i)
-                    #print("Freq_set for " + str(node) + ": " + str(frequency_set))
                 if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
-                    #print("NODE " + str(node) + " IS ANONYMOUS")
                     mark_all_direct_generalizations_of_node(marked_nodes, node, i)
                 else:
-                    #print("NODE " + str(node) + " IS NOT ANONYMOUS")
                     Si.remove(node)
                     insert_direct_generalization_of_node_in_queue(node, queue, i, Si)
                     cursor.execute("DELETE FROM C" + str(i) + " WHERE ID = " + str(node[0]))
-                    cursor.execute("SELECT COUNT(*) FROM C" + str(i))
-                    print(list(cursor))
 
-        graph_generation(Ci, Si, i)
+        graph_generation(Si, i)
         marked_nodes = set()
 
 
@@ -591,7 +514,7 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
         pairs.append(x + "=" + y + ".'0'")
 
     cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
-          " WHERE " + 'AND '.join(pairs) + " LIMIT 20")
+          " WHERE " + 'AND '.join(pairs))
 
     with open("anonymous_table.csv", "w") as anonymous_table:
         for row in list(cursor):
@@ -610,7 +533,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     connection = sqlite3.connect(":memory:")
-    #connection = sqlite3.connect("identifier.sqlite")
     cursor = connection.cursor()
     cursor.execute("PRAGMA synchronous = OFF")
     cursor.execute("PRAGMA cache_size = -256000")
@@ -642,17 +564,8 @@ if __name__ == "__main__":
     if k > len(list(cursor)):
         print("k is invalid")
         exit(0)
-    """
-    cursor.execute("SELECT COUNT(*) FROM " + dataset + ", Sex_dim, Birthdate_dim, Zipcode_dim "
-                                                       "WHERE "
-                                                       "" + dataset + ".Birthdate=Birthdate_dim.\"0\" AND " + dataset +
-                   ".Sex=Sex_dim.\"0\"  AND " + dataset + ".Zipcode=Zipcode_dim.\"0\" GROUP BY Birthdate_dim.\"1\", "
-                                                          " Sex_dim.\"0\", Zipcode_dim.\"1\" ")
-    print(list(cursor))
-    """
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
-
     create_tables_Ci_Ei()
 
     # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
