@@ -315,7 +315,6 @@ def graph_generation(Si, i):
         else:
             column_infos.append(str(column[1]) + " " + str(column[2]))
     cursor.execute("CREATE TABLE IF NOT EXISTS S" + i_str + " (" + ', '.join(column_infos) + ")")
-    cursor.execute("CREATE TABLE IF NOT EXISTS C" + ipp_str + " (" + ', '.join(column_infos) + ")")
     connection.commit()
     question_marks = ""
     for j in range(0, len(column_infos_from_db) - 1):
@@ -336,6 +335,7 @@ def graph_generation(Si, i):
         return
     i_here_str = str(i_here)
     cursor.execute("BEGIN TRANSACTION")
+    cursor.execute("CREATE TABLE IF NOT EXISTS C" + ipp_str + " (" + ', '.join(column_infos) + ")")
     cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN dim" + i_here_str + " TEXT")
     cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN index" + i_here_str + " INT")
     # UPDATE Ci SET dim2 = 'null', index2 = 'null' WHERE Ci.index2 is null
@@ -561,7 +561,7 @@ if __name__ == "__main__":
     k = int(args.k)
 
     cursor.execute("SELECT * FROM " + dataset)
-    if k > len(list(cursor)):
+    if k > len(list(cursor)) or k <= 0:
         print("k is invalid")
         exit(0)
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate

@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="97909e0e-e8b0-4629-88d7-f0d0864c1e25" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anonymous_table.csv" beforeDir="false" afterPath="$PROJECT_DIR$/anonymous_table.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -93,7 +94,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
-      <option name="PARAMETERS" value="-d Adult -D dimension_tables_5qi.json -k 1000" />
+      <option name="PARAMETERS" value="-d Adult -D dimension_tables_3qi.json -k 2" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -197,7 +198,7 @@
       <workItem from="1584092555905" duration="2300000" />
       <workItem from="1584205536356" duration="2352000" />
       <workItem from="1584460546080" duration="5997000" />
-      <workItem from="1584801103216" duration="4398000" />
+      <workItem from="1584801103216" duration="4970000" />
     </task>
     <task id="LOCAL-00001" summary="starting incognito">
       <created>1582196134572</created>
@@ -395,7 +396,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584805257374</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="cleaning">
+      <created>1584806624581</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1584806624581</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -415,7 +423,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="a lot of mistakes" />
     <MESSAGE value="making graph_generation" />
     <MESSAGE value="first version graph generation finished" />
     <MESSAGE value="bode" />
@@ -440,10 +447,11 @@
     <MESSAGE value="un po' di cleaning" />
     <MESSAGE value="bugfixing" />
     <MESSAGE value="pruning phase fixed" />
-    <option name="LAST_COMMIT_MESSAGE" value="pruning phase fixed" />
+    <MESSAGE value="cleaning" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleaning" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1584806194463" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1584806933867" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Python$test.coverage" NAME="test Coverage Results" MODIFIED="1584464667036" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
