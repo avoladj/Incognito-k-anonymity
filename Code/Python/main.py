@@ -419,15 +419,25 @@ def graph_generation(Ci, Si, i):
 
     cursor.execute("SELECT * FROM C" + ipp_str + "")
     print("C" + ipp_str + ": " + str(list(cursor)))
-    cursor.execute("SELECT * FROM C" + ipp_str + "")
+    cursor.execute("SELECT * FROM S" + i_str + "")
+    print("S" + i_str + ": " + str(list(cursor)))
+    cursor.execute("SELECT * FROM E" + i_str + "")
+    print("E" + i_str + ": " + str(list(cursor)))
 
+    cursor.execute("SELECT * FROM C" + ipp_str + "")
     Ci_new = set(cursor)
-    Ci_map = get_Ci_map(Ci)
 
     # prune phase
+    # all subsets of Si == dims_and_indexes of all nodes in Si
+    # forall node in Ci+1 I will remove that nodes which contains a subset of dims_and_indexes
+    # which is not in all_subsets_of_Si
+
+    all_subsets_of_Si = set()
+    for node in Si_new:
+        all_subsets_of_Si.add(tuple(get_dims_and_indexes_of_node(node)))
     for c in Ci_new:
-        for s in all_subsets(c, i, Ci):
-            if s in Ci_map.keys() and Ci_map[s] not in Si_new:
+        for s in subsets(get_dims_and_indexes_of_node(c), i):
+            if s not in all_subsets_of_Si:
                 node_id = str(c[0])
                 cursor.execute("BEGIN TRANSACTION")
                 cursor.execute("DELETE FROM C" + ipp_str + " WHERE C" + ipp_str + ".ID = " + node_id)

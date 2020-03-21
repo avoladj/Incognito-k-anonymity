@@ -4,8 +4,8 @@
     <list default="true" id="97909e0e-e8b0-4629-88d7-f0d0864c1e25" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anonymous_table.csv" beforeDir="false" afterPath="$PROJECT_DIR$/anonymous_table.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identifier.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/identifier.sqlite" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../Incognito- Efficient full domain k-anonymity.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/../../Incognito- Efficient full domain k-anonymity.pdf" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -95,7 +95,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
-      <option name="PARAMETERS" value="-d Adult -D dimension_tables_5qi.json -k 1000" />
+      <option name="PARAMETERS" value="-d Adult -D dimension_tables_5qi.json -k 10" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -198,7 +198,8 @@
       <workItem from="1583946148501" duration="2489000" />
       <workItem from="1584092555905" duration="2300000" />
       <workItem from="1584205536356" duration="2352000" />
-      <workItem from="1584460546080" duration="5892000" />
+      <workItem from="1584460546080" duration="5997000" />
+      <workItem from="1584801103216" duration="3098000" />
     </task>
     <task id="LOCAL-00001" summary="starting incognito">
       <created>1582196134572</created>
@@ -382,7 +383,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584207913911</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="bugfixing">
+      <created>1584466805919</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1584466805919</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -421,28 +429,16 @@
     <MESSAGE value="bug fixed and 4 QIs" />
     <MESSAGE value="fixing query" />
     <MESSAGE value="fixing query 2.0" />
-    <MESSAGE value="bugfixing" />
     <MESSAGE value="C1C2C3" />
     <MESSAGE value="marked_nodes reset" />
     <MESSAGE value="bella sappling" />
     <MESSAGE value="json fixed" />
     <MESSAGE value="un po' di cleaning" />
-    <option name="LAST_COMMIT_MESSAGE" value="un po' di cleaning" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <condition expression="i == 3" language="Python" />
-          <url>file://$PROJECT_DIR$/main.py</url>
-          <line>504</line>
-          <option name="timeStamp" value="13" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="bugfixing" />
+    <option name="LAST_COMMIT_MESSAGE" value="bugfixing" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1584466642706" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Python$main.coverage" NAME="main Coverage Results" MODIFIED="1584805004719" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Python$test.coverage" NAME="test Coverage Results" MODIFIED="1584464667036" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
