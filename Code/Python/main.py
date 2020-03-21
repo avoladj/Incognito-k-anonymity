@@ -26,8 +26,7 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
         for line in dataset_data:
             """
             For each line I remove the 'classification' attribute (<>=50K), 
-            every number will be converted to a float and
-            replace - with _, otherwise sqlite3 bothers
+            replace - with _, otherwise sqlite3 will complain
             """
             values = line.rstrip(", <=50K\n").rstrip(", >50K\n").split(",")
             new_values = list()
@@ -88,9 +87,7 @@ def init_C1_and_E1():
     id = 1
     for dimension in dimension_tables:
         index = 0
-        for node in dimension_tables[dimension]:
-            if str(node) == 'type':
-                continue
+        for i in range(len(dimension_tables[dimension])):
             # parenty = index - y
             # parent2 is the parent of parent1
             parent1 = get_parent_index_C1(index, 1)
@@ -239,10 +236,10 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node,
         dimension_table_names.append(dimension_table)
 
     cursor.execute("BEGIN TRANSACTION")
-    cursor.execute("INSERT INTO TempTable "
-                   "SELECT COUNT(*) as count, " + ', '.join(select_items) +
+    cursor.execute("INSERT INTO TempTable"
+                   " SELECT COUNT(*) AS count, " + ', '.join(select_items) +
                    " FROM " + dataset + ", " + ', '.join(dimension_table_names) +
-                   " WHERE " + 'and '.join(where_items) +
+                   " WHERE " + 'AND '.join(where_items) +
                    " GROUP BY " + ', '.join(group_by_attributes))
     connection.commit()
 
@@ -304,7 +301,7 @@ def graph_generation(Si, i):
     i_here = i+1
     i_str = str(i)
     ipp_str = str(i+1)
-    # to create Si i need all columnnames of Ci
+    # to create Si i need all column names of Ci
     # PRAGMA returns infos like (0, 'ID', 'INTEGER', 0, None, 1), (1, 'dim1', 'TEXT', 0, None, 0), ...
     cursor.execute("PRAGMA table_info(C" + i_str + ")")
     column_infos = list()
@@ -325,9 +322,8 @@ def graph_generation(Si, i):
     cursor.executemany("INSERT INTO S" + i_str + " values (" + question_marks + ")", Si)
     connection.commit()
 
-    cursor.execute("SELECT * FROM S" + i_str + "")
+    cursor.execute("SELECT * FROM S" + i_str)
     Si_new = set(cursor)
-    print("S" + i_str + ": " + str(Si_new))
 
     # in the last iteration are useless the phases because after graph_generation only Si (Sn) is taken
     # into account
@@ -359,9 +355,9 @@ def graph_generation(Si, i):
     # join phase. Ci == Ci+1
     if i > 1:
         cursor.execute("BEGIN TRANSACTION")
-        cursor.execute("INSERT INTO C" + ipp_str + " "
-                        "SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str + " "
-                        "FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str)
+        cursor.execute("INSERT INTO C" + ipp_str +
+                        " SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str +
+                        " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1 = q.dim1 and p.index1 = q.index1 " + where_str)
         connection.commit()
 
     else:
@@ -370,12 +366,7 @@ def graph_generation(Si, i):
                        " FROM S" + i_str + " p, S" + i_str + " q WHERE p.dim1<q.dim1")
         connection.commit()
 
-    cursor.execute("SELECT * FROM C" + ipp_str + "")
-    print("C" + ipp_str + ": " + str(list(cursor)))
-    cursor.execute("SELECT * FROM E" + i_str + "")
-    print("E" + i_str + ": " + str(list(cursor)))
-
-    cursor.execute("SELECT * FROM C" + ipp_str + "")
+    cursor.execute("SELECT * FROM C" + ipp_str)
     Ci_new = set(cursor)
 
     # prune phase
@@ -393,7 +384,7 @@ def graph_generation(Si, i):
                 cursor.execute("BEGIN TRANSACTION")
                 cursor.execute("DELETE FROM C" + ipp_str + " WHERE C" + ipp_str + ".ID = " + node_id)
                 cursor.execute("DELETE FROM E" + i_str + " WHERE E" + i_str + ".start = " + node_id +
-                               " or E" + i_str + ".end = " + node_id)
+                               " OR E" + i_str + ".end = " + node_id)
                 connection.commit()
 
     # edge generation
@@ -403,12 +394,12 @@ def graph_generation(Si, i):
                    "WITH CandidatesEdges(start, end) AS ("
                    "SELECT p.ID, q.ID "
                    "FROM C" + ipp_str + " p,C" + ipp_str + " q,E" + i_str + " e,E" + i_str + " f "
-                   "WHERE (e.start = p.parent1 and e.end = q.parent1 "
-                   "and f.start = p.parent2 and f.end = q.parent2) "
-                   "or (e.start = p.parent1 and e.end = q.parent1 "
-                   "and p.parent2 = q.parent2) "
-                   "or (e.start = p.parent2 and e.end = q.parent2 "
-                   "and p.parent1 = q.parent1) "
+                   "WHERE (e.start = p.parent1 AND e.end = q.parent1 "
+                   "AND f.start = p.parent2 AND f.end = q.parent2) "
+                   "OR (e.start = p.parent1 AND e.end = q.parent1 "
+                   "AND p.parent2 = q.parent2) "
+                   "OR (e.start = p.parent2 AND e.end = q.parent2 "
+                   "AND p.parent1 = q.parent1) "
                    ") "
                    "SELECT D.start, D.end "
                    "FROM CandidatesEdges D "
@@ -417,8 +408,6 @@ def graph_generation(Si, i):
                    "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
     connection.commit()
-    cursor.execute("SELECT * FROM E" + ipp_str + "")
-    print("E" + ipp_str + ": " + str(list(cursor)))
 
 
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
@@ -483,10 +472,18 @@ def basic_incognito_algorithm(priority_queue, Q, k):
 
 
 def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
-    # get node with lowest ID, as it should be the least "generalized" one that makes the table k-anonymous
+    # get node with lowest height, as it should be the least "generalized" one that makes the table k-anonymous
     lowest_node = min(Sn, key = lambda t: t[0])
+    height = get_height_of_node(lowest_node)
+    for node in Sn:
+        temp_height = get_height_of_node(node)
+        print("Node " + str(node) + ", height: " + str(temp_height))
+        if temp_height < height:
+            height = temp_height
+            lowest_node = node
 
     print("Lowest node: " + str(lowest_node))
+    print("Sn: " + str(Sn))
 
     # get QI names and their indexes (i.e. their generalization level)
     qis = list()
@@ -573,7 +570,6 @@ if __name__ == "__main__":
 
     cursor.execute("SELECT * FROM S" + str(len(Q)))
     Sn = list(cursor)
-    print("Sn: " + str(Sn))
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
 
