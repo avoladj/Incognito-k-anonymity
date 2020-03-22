@@ -1,4 +1,5 @@
 from pysqlite3 import dbapi2 as sqlite3
+from os import path
 import re
 import argparse
 import json
@@ -8,27 +9,20 @@ from sympy import subsets
 
 
 def prepare_table_to_be_k_anonymized(dataset, cursor):
-    path_to_datasets = "../datasets/"
-    # get attributes from adult.names
-    with open(path_to_datasets + dataset + ".names", "r") as dataset_names:
-        for line in dataset_names:
-            if not line.startswith("|") and re.search(".:.", line) is not None:
-                split = line.split(":")
-                name_and_type_of_attribute_to_append = split[0].strip().replace("-", "_")
-                name_and_type_of_attribute_to_append += " TEXT"
-                attributes.append(name_and_type_of_attribute_to_append)
-    # insert records in adult.data in table " + dataset + "
-    with open(path_to_datasets + dataset + ".data", "r") as dataset_data:
-        table_name = dataset
+    with open(dataset, "r") as dataset_table:
+        table_name = path.basename(dataset).split(".")[0]
+
+        # first line contains attribute names
+        attribute_names = dataset_table.readline().split(",")
+        for attr in attribute_names:
+            table_attribute = attr.strip() + " TEXT"
+            attributes.append(table_attribute.replace("-", "_"))
         cursor.execute("CREATE TABLE IF NOT EXISTS " + table_name + "(" + ','.join(attributes) + ")")
         connection.commit()
 
-        for line in dataset_data:
-            """
-            For each line I remove the 'classification' attribute (<>=50K), 
-            replace - with _, otherwise sqlite3 will complain
-            """
-            values = line.rstrip(", <=50K\n").rstrip(", >50K\n").split(",")
+        # insert records into the SQL table
+        for line in dataset_table:
+            values = line.split(",")
             new_values = list()
             for value in values:
                 value = value.strip()
@@ -43,7 +37,6 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
             cursor.execute("INSERT INTO " + table_name + ' values ({})'.format(new_values)
                            .replace("[", "").replace("]", ""))
             connection.commit()
-
 
 def get_dimension_tables():
     json_text = ""
@@ -383,8 +376,8 @@ def graph_generation(Si, i):
                 node_id = str(c[0])
                 cursor.execute("BEGIN TRANSACTION")
                 cursor.execute("DELETE FROM C" + ipp_str + " WHERE C" + ipp_str + ".ID = " + node_id)
-                cursor.execute("DELETE FROM E" + i_str + " WHERE E" + i_str + ".start = " + node_id +
-                               " OR E" + i_str + ".end = " + node_id)
+                #cursor.execute("DELETE FROM E" + i_str + " WHERE E" + i_str + ".start = " + node_id +
+                #               " OR E" + i_str + ".end = " + node_id)
                 connection.commit()
 
     # edge generation
@@ -513,10 +506,10 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
           " WHERE " + 'AND '.join(pairs))
 
-    with open("anonymous_table.csv", "w") as anonymous_table:
-        for row in list(cursor):
-            anonymous_table.writelines(','.join(str(x) for x in row) + "\n")
-        anonymous_table.close()
+    #with open("anonymous_table.csv", "w") as anonymous_table:
+    #    for row in list(cursor):
+    #        anonymous_table.writelines(','.join(str(x) for x in row) + "\n")
+    #    anonymous_table.close()
 
 
 if __name__ == "__main__":
@@ -540,6 +533,8 @@ if __name__ == "__main__":
     dataset = args.dataset
 
     prepare_table_to_be_k_anonymized(dataset, cursor)
+
+    dataset = path.basename(dataset).split(".")[0]
 
     """
      dimension_tables is a dictionary in which a single key is a specific QI (except the first that indicates the type) and
