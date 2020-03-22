@@ -1,16 +1,14 @@
 from pysqlite3 import dbapi2 as sqlite3
 from os import path
-import re
+from sympy import subsets
 import argparse
 import json
 import queue
 
-from sympy import subsets
-
-
 def prepare_table_to_be_k_anonymized(dataset, cursor):
     with open(dataset, "r") as dataset_table:
         table_name = path.basename(dataset).split(".")[0]
+        print("Working on dataset " + table_name)
 
         # first line contains attribute names
         attribute_names = dataset_table.readline().split(",")
@@ -19,6 +17,7 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
             attributes.append(table_attribute.replace("-", "_"))
         cursor.execute("CREATE TABLE IF NOT EXISTS " + table_name + "(" + ','.join(attributes) + ")")
         connection.commit()
+        print("Attributes found: " + str([attr.strip() for attr in attribute_names]))
 
         # insert records into the SQL table
         for line in dataset_table:
@@ -39,10 +38,12 @@ def prepare_table_to_be_k_anonymized(dataset, cursor):
             connection.commit()
 
 def get_dimension_tables():
+    print("Getting dimension tables", end="")
     json_text = ""
     with open(args.dimension_tables, "r") as dimension_tables_filename:
         for line in dimension_tables_filename:
             json_text += line.strip()
+    print("\t OK")
     return json.loads(json_text)
 
 
@@ -77,6 +78,7 @@ def get_parent_index_C1(index, parent1_or_parent2):
 
 
 def init_C1_and_E1():
+    print("Generating graph for 1 quasi-identifier", end="")
     id = 1
     for dimension in dimension_tables:
         index = 0
@@ -92,6 +94,7 @@ def init_C1_and_E1():
             id += 1
             index += 1
     connection.commit()
+    print("\t OK")
 
 
 def create_tables_Ci_Ei():
@@ -294,6 +297,8 @@ def graph_generation(Si, i):
     i_here = i+1
     i_str = str(i)
     ipp_str = str(i+1)
+    if i < len(Q):
+        print("Generating graphs for " + ipp_str + " quasi-identifiers", end="")
     # to create Si i need all column names of Ci
     # PRAGMA returns infos like (0, 'ID', 'INTEGER', 0, None, 1), (1, 'dim1', 'TEXT', 0, None, 0), ...
     cursor.execute("PRAGMA table_info(C" + i_str + ")")
@@ -401,6 +406,7 @@ def graph_generation(Si, i):
                    "FROM CandidatesEdges D1, CandidatesEdges D2 "
                    "WHERE D1.end = D2.start")
     connection.commit()
+    print("\t OK")
 
 
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
@@ -470,13 +476,11 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     height = get_height_of_node(lowest_node)
     for node in Sn:
         temp_height = get_height_of_node(node)
-        print("Node " + str(node) + ", height: " + str(temp_height))
         if temp_height < height:
             height = temp_height
             lowest_node = node
 
-    print("Lowest node: " + str(lowest_node))
-    print("Sn: " + str(Sn))
+    print("Chosen anonymization levels: ", end="")
 
     # get QI names and their indexes (i.e. their generalization level)
     qis = list()
@@ -485,6 +489,8 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
         if lowest_node[i] in Q:
             qis.append(lowest_node[i])
             qi_indexes.append(lowest_node[i+1])
+            print(str(lowest_node[i]) + "(" + str(lowest_node[i+1]) + ") ", end="")
+    print("")
 
     # get all table attributes with generalized QI's in place of the original ones
     gen_attr = attributes
@@ -506,11 +512,12 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
           " WHERE " + 'AND '.join(pairs))
 
-    #with open("anonymous_table.csv", "w") as anonymous_table:
-    #    for row in list(cursor):
-    #        anonymous_table.writelines(','.join(str(x) for x in row) + "\n")
-    #    anonymous_table.close()
-
+    print("Writing k-anonymous table to anonymous_table.csv", end="")
+    with open("anonymous_table.csv", "w") as anonymous_table:
+        for row in list(cursor):
+            anonymous_table.writelines(','.join(str(x) for x in row) + "\n")
+        anonymous_table.close()
+    print("\t OK")
 
 if __name__ == "__main__":
 
@@ -518,7 +525,7 @@ if __name__ == "__main__":
                                                  "path and filename of dimension tables and"
                                                  "k of k-anonymization")
     parser.add_argument("--dataset", "-d", required=True, type=str)
-    parser.add_argument("--dimension_tables", "-D", required=True, type=str)
+    parser.add_argument("--dimension-tables", "-D", required=True, type=str)
     parser.add_argument("--k", "-k", required=True, type=str)
     args = parser.parse_args()
 
@@ -554,7 +561,7 @@ if __name__ == "__main__":
 
     cursor.execute("SELECT * FROM " + dataset)
     if k > len(list(cursor)) or k <= 0:
-        print("k is invalid")
+        print("ERROR: k value is invalid")
         exit(0)
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
@@ -567,5 +574,7 @@ if __name__ == "__main__":
     Sn = list(cursor)
 
     projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn)
+
+    print("DONE")
 
     connection.close()
