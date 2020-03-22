@@ -21,6 +21,5 @@ Multiple-word QI names and values must be provided using underscores ( _ ) inste
 of hyphens ( - ), even if the input database uses hyphens.
 
 ## TODO
-- Check if DB improvements actually work / are useless
 - Improve dimension table values
 - Divide source into multiple files
