@@ -5,6 +5,7 @@ import argparse
 import json
 import queue
 
+
 def prepare_table_to_be_k_anonymized():
     with open(dataset, "r") as dataset_table:
         table_name = path.basename(dataset).split(".")[0]
@@ -91,8 +92,8 @@ def init_C1_and_E1():
 
 
 def create_tables_Ci_Ei():
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS C1 (ID INTEGER PRIMARY KEY, dim1 TEXT, index1 INT, parent1 INT, parent2 INT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS C1 (ID INTEGER PRIMARY KEY, dim1 TEXT,"
+                   " index1 INT, parent1 INT, parent2 INT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS E1 (start INT, end INT)")
 
 
@@ -340,7 +341,6 @@ def graph_generation(Si, i):
     # all subsets of Si == dims_and_indexes of all nodes in Si
     # for all nodes in Ci+1 we will remove the nodes that contain a subset of dims_and_indexes
     # which is not in all_subsets_of_Si
-
     all_subsets_of_Si = set()
     for node in Si_new:
         all_subsets_of_Si.add(tuple(get_dims_and_indexes_of_node(node)))
@@ -485,13 +485,14 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Insert path and filename of QI, "
-                                                 "path and filename of dimension tables and"
-                                                 "k of k-anonymization")
-    parser.add_argument("--dataset", "-d", required=True, type=str)
-    parser.add_argument("--dimension-tables", "-D", required=True, type=str)
-    parser.add_argument("--k", "-k", required=True, type=int)
-    parser.add_argument("--threshold", "-t", required=True, type=int)
+    parser = argparse.ArgumentParser(description="Insert the path to the dataset you wish to anonymize,"
+                                                 " the path for the dimension tables file (in JSON format),"
+                                                 " the desired k value and a threshold value to ignore"
+                                                 " outliers")
+    parser.add_argument("--dataset", "-d", required=True, type=str, help="Dataset path")
+    parser.add_argument("--dimension-tables", "-D", required=True, type=str, help="Dimension tables path")
+    parser.add_argument("--k", "-k", required=True, type=int, help="k value")
+    parser.add_argument("--threshold", "-t", required=True, type=int, help="Threshold value")
     args = parser.parse_args()
 
     connection = sqlite3.connect(":memory:")
@@ -507,6 +508,7 @@ if __name__ == "__main__":
     prepare_table_to_be_k_anonymized()
     dataset = path.basename(dataset).split(".")[0]
 
+    # get dimension tables
     dimension_tables = get_dimension_tables()
     Q = set(dimension_tables.keys())
 
