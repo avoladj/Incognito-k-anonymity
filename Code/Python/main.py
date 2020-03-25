@@ -431,7 +431,7 @@ def basic_incognito_algorithm(priority_queue):
 
 def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
     # get node with lowest height, as it should be the least "generalized" one that makes the table k-anonymous
-    lowest_node = min(Sn, key = lambda t: t[0])
+    lowest_node = min(Sn, key=lambda t: t[0])
     height = get_height_of_node(lowest_node)
     for node in Sn:
         temp_height = get_height_of_node(node)
@@ -483,6 +483,7 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
         anonymous_table.close()
     print("\t OK")
 
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Insert the path to the dataset you wish to anonymize,"
@@ -492,7 +493,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", "-d", required=True, type=str, help="Dataset path")
     parser.add_argument("--dimension-tables", "-D", required=True, type=str, help="Dimension tables path")
     parser.add_argument("--k", "-k", required=True, type=int, help="k value")
-    parser.add_argument("--threshold", "-t", required=True, type=int, help="Threshold value")
+    parser.add_argument("--threshold", "-t", required=False, type=int, help="Threshold value")
     args = parser.parse_args()
 
     connection = sqlite3.connect(":memory:")
@@ -516,15 +517,19 @@ if __name__ == "__main__":
     create_dimension_tables(dimension_tables)
 
     k = args.k
-    cursor.execute("SELECT * FROM " + dataset)
+    cursor.execute("SELECT * FROM " + str(dataset))
     if k > len(list(cursor)) or k <= 0:
         print("ERROR: k value is invalid")
         exit(0)
 
-    threshold = args.threshold
-    if threshold >= k or threshold < 0:
-        print("ERROR: threshold value is invalid")
-        exit(0)
+    try:
+        threshold = args.threshold
+        if threshold >= k or threshold < 0:
+            print("ERROR: threshold value is invalid")
+            exit(0)
+    except:
+        threshold = 0
+        pass
 
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}
