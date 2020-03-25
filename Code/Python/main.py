@@ -5,7 +5,7 @@ import argparse
 import json
 import queue
 
-def prepare_table_to_be_k_anonymized(dataset, cursor):
+def prepare_table_to_be_k_anonymized():
     with open(dataset, "r") as dataset_table:
         table_name = path.basename(dataset).split(".")[0]
         print("Working on dataset " + table_name)
@@ -378,7 +378,7 @@ def graph_generation(Si, i):
     print("\t OK")
 
 
-def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
+def table_is_k_anonymous_wrt_attributes_of_node(frequency_set):
     """
     Relation T is said to satisfy the k-anonymity property (or to be k-anonymous) with respect to attribute set A if
     every count in the frequency set of T with respect to A is greater than or equal to k
@@ -388,12 +388,12 @@ def table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
     for count in frequency_set:
         if type(count) == tuple:
             count = count[0]
-        if count < k:
+        if k > count > threshold:
             return False
     return True
 
 
-def basic_incognito_algorithm(priority_queue, Q, k):
+def basic_incognito_algorithm(priority_queue):
     init_C1_and_E1()
     queue = priority_queue
     # marked_nodes = {(marked, node_ID)}
@@ -428,7 +428,7 @@ def basic_incognito_algorithm(priority_queue, Q, k):
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_T(node)
                 else:
                     frequency_set = frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, i)
-                if table_is_k_anonymous_wrt_attributes_of_node(frequency_set, k):
+                if table_is_k_anonymous_wrt_attributes_of_node(frequency_set):
                     mark_all_direct_generalizations_of_node(marked_nodes, node, i)
                 else:
                     Si.remove(node)
@@ -463,10 +463,12 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
 
     # get all table attributes with generalized QI's in place of the original ones
     gen_attr = attributes
+    considered_gen_qis =list()
     for i in range(len(gen_attr)):
         gen_attr[i] = gen_attr[i].split()[0]
         if gen_attr[i] in qis:
             gen_attr[i] = qis[qis.index(gen_attr[i])] + "_dim.'" + str(qi_indexes[qis.index(gen_attr[i])]) + "'"
+            considered_gen_qis.append(gen_attr[i])
 
     # get dimension tables names
     dim_tables = list()
@@ -479,7 +481,10 @@ def projection_of_attributes_of_Sn_onto_T_and_dimension_tables(Sn):
         pairs.append(x + "=" + y + ".'0'")
 
     cursor.execute("SELECT " + ', '.join(gen_attr) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
-          " WHERE " + 'AND '.join(pairs))
+            " WHERE " + 'AND '.join(pairs) + " AND (" + ', '.join(considered_gen_qis) + ") IN"
+            " (SELECT " + ', '.join(considered_gen_qis) + " FROM " + dataset + ", " + ', '.join(dim_tables) +
+            " WHERE " + 'AND '.join(pairs) + "GROUP BY " + ', '.join(considered_gen_qis) + " HAVING"
+            " COUNT(*) > " + str(threshold) + ")")
 
     print("Writing k-anonymous table to anonymous_table.csv", end="")
     with open("anonymous_table.csv", "w") as anonymous_table:
@@ -495,7 +500,8 @@ if __name__ == "__main__":
                                                  "k of k-anonymization")
     parser.add_argument("--dataset", "-d", required=True, type=str)
     parser.add_argument("--dimension-tables", "-D", required=True, type=str)
-    parser.add_argument("--k", "-k", required=True, type=str)
+    parser.add_argument("--k", "-k", required=True, type=int)
+    parser.add_argument("--threshold", "-t", required=True, type=int)
     args = parser.parse_args()
 
     connection = sqlite3.connect(":memory:")
@@ -508,37 +514,31 @@ if __name__ == "__main__":
     attributes = list()
 
     dataset = args.dataset
-
-    prepare_table_to_be_k_anonymized(dataset, cursor)
-
+    prepare_table_to_be_k_anonymized()
     dataset = path.basename(dataset).split(".")[0]
 
-    """
-     dimension_tables is a dictionary in which a single key is a specific QI (except the first that indicates the type) and
-     dimension_tables[QI] is the dimension table of QI. eg:
-     <class 'dict'>: {'age': {'0': [1, 2, 3], '1': [4, 5]}, 'occupation': {'0': ['a', 'b', 'c'], '1': ['d', 'e'], '2': ['*']}}
-    
-     Q is a set containing the quasi-identifiers. eg:
-     <class 'set'>: {'age', 'occupation'}
-    """
     dimension_tables = get_dimension_tables()
     Q = set(dimension_tables.keys())
 
     # create dimension SQL tables
     create_dimension_tables(dimension_tables)
 
-    k = int(args.k)
-
+    k = args.k
     cursor.execute("SELECT * FROM " + dataset)
     if k > len(list(cursor)) or k <= 0:
         print("ERROR: k value is invalid")
+        exit(0)
+
+    threshold = args.threshold
+    if threshold >= k or threshold < 0:
+        print("ERROR: threshold value is invalid")
         exit(0)
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
     # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
     create_tables_Ci_Ei()
 
     # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
-    basic_incognito_algorithm(queue.PriorityQueue(), Q, k)
+    basic_incognito_algorithm(queue.PriorityQueue())
 
     cursor.execute("SELECT * FROM S" + str(len(Q)))
     Sn = list(cursor)
