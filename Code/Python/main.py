@@ -91,9 +91,6 @@ def init_C1_and_E1():
 
 
 def create_tables_Ci_Ei():
-    # Ci initally has only one pair dimx, indexx, which will increment if k-anonymity is not achieved
-    # autoincrement id starts from 1 by default
-    # parent1 == [3], parent2 == [4]
     cursor.execute(
         "CREATE TABLE IF NOT EXISTS C1 (ID INTEGER PRIMARY KEY, dim1 TEXT, index1 INT, parent1 INT, parent2 INT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS E1 (start INT, end INT)")
@@ -149,8 +146,8 @@ def frequency_set_of_T_wrt_attributes_of_node_using_T(node):
     for i in range(len(dims_and_indexes_s_node)):
         if dims_and_indexes_s_node[i][0] == "null" or dims_and_indexes_s_node[i][1] == "null":
             continue
-        column_name, dimension_table, dimension_with_previous_generalization_level, generalization_level_str = prepare_query_parameters(
-            attributes, dims_and_indexes_s_node, group_by_attributes, i)
+        column_name, dimension_table, dimension_with_previous_generalization_level, generalization_level_str = \
+            prepare_query_parameters(attributes, dims_and_indexes_s_node, group_by_attributes, i)
 
         where_item = "" + dataset + "." + column_name + " = " + dimension_with_previous_generalization_level
 
@@ -185,8 +182,8 @@ def get_dims_and_indexes_of_node(node):
 
 def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, i):
     i_str = str(i)
-    cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE E" + i_str + ".start = C" + i_str +
-                   ".ID and E" + i_str + ".end = " + str(node[0]))
+    cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE E" + i_str + ".start = C" +
+                   i_str + ".ID and E" + i_str + ".end = " + str(node[0]))
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
 
     attributes = get_dimensions_of_node(node)
@@ -206,8 +203,8 @@ def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node,
 
         if dims_and_indexes_s_node[i][0] == "null" or dims_and_indexes_s_node[i][1] == "null":
             continue
-        column_name, dimension_table, dimension_with_previous_generalization_level, generalization_level_str = prepare_query_parameters(
-            attributes, dims_and_indexes_s_node, group_by_attributes, i)
+        column_name, dimension_table, dimension_with_previous_generalization_level, generalization_level_str = \
+            prepare_query_parameters(attributes, dims_and_indexes_s_node, group_by_attributes, i)
 
         select_item = dimension_table + ".\"" + generalization_level_str + "\" AS " + column_name
         where_item = "" + dataset + "." + column_name + " = " + dimension_with_previous_generalization_level
@@ -281,7 +278,7 @@ def graph_generation(Si, i):
     ipp_str = str(i+1)
     if i < len(Q):
         print("Generating graphs for " + ipp_str + " quasi-identifiers", end="")
-    # to create Si i need all column names of Ci
+    # to create Si we need all column names of Ci
     # PRAGMA returns infos like (0, 'ID', 'INTEGER', 0, None, 1), (1, 'dim1', 'TEXT', 0, None, 0), ...
     cursor.execute("PRAGMA table_info(C" + i_str + ")")
     column_infos = list()
@@ -302,15 +299,14 @@ def graph_generation(Si, i):
     cursor.execute("SELECT * FROM S" + i_str)
     Si_new = set(cursor)
 
-    # in the last iteration are useless the phases because after graph_generation only Si (Sn) is taken
-    # into account
+    # in the last iteration the phases are useless because after graph_generation only Si (Sn) is taken into account
     if i == len(Q):
         return
     i_here_str = str(i_here)
     cursor.execute("CREATE TABLE IF NOT EXISTS C" + ipp_str + " (" + ', '.join(column_infos) + ")")
     cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN dim" + i_here_str + " TEXT")
     cursor.execute("ALTER TABLE C" + ipp_str + " ADD COLUMN index" + i_here_str + " INT")
-    # UPDATE Ci SET dim2 = 'null', index2 = 'null' WHERE Ci.index2 is null
+
     cursor.execute("UPDATE C" + ipp_str + " SET dim" + i_here_str + " = 'null', index" + i_here_str +
                    "= 'null' WHERE index" + i_here_str + " is null")
     select_str = ""
@@ -327,7 +323,7 @@ def graph_generation(Si, i):
             select_str_except += ", q.dim" + j_str + ", q.index" + j_str
             where_str += " and p.dim" + j_str + "=q.dim" + j_str + " and p.index" + j_str + "=q.index" + j_str
 
-    # join phase. Ci == Ci+1
+    # join phase
     if i > 1:
         cursor.execute("INSERT INTO C" + ipp_str +
                         " SELECT null, p.dim1, p.index1, p.ID, q.ID" + select_str +
@@ -342,7 +338,7 @@ def graph_generation(Si, i):
 
     # prune phase
     # all subsets of Si == dims_and_indexes of all nodes in Si
-    # forall node in Ci+1 I will remove that nodes which contains a subset of dims_and_indexes
+    # for all nodes in Ci+1 we will remove the nodes that contain a subset of dims_and_indexes
     # which is not in all_subsets_of_Si
 
     all_subsets_of_Si = set()
@@ -353,8 +349,6 @@ def graph_generation(Si, i):
             if s not in all_subsets_of_Si:
                 node_id = str(c[0])
                 cursor.execute("DELETE FROM C" + ipp_str + " WHERE C" + ipp_str + ".ID = " + node_id)
-                #cursor.execute("DELETE FROM E" + i_str + " WHERE E" + i_str + ".start = " + node_id +
-                #               " OR E" + i_str + ".end = " + node_id)
 
     # edge generation
     cursor.execute("CREATE TABLE IF NOT EXISTS E" + ipp_str + " (start INT, end INT)")
@@ -379,10 +373,6 @@ def graph_generation(Si, i):
 
 
 def table_is_k_anonymous_wrt_attributes_of_node(frequency_set):
-    """
-    Relation T is said to satisfy the k-anonymity property (or to be k-anonymous) with respect to attribute set A if
-    every count in the frequency set of T with respect to A is greater than or equal to k
-    """
     if len(frequency_set) == 0:
         return False
     for count in frequency_set:
@@ -396,7 +386,7 @@ def table_is_k_anonymous_wrt_attributes_of_node(frequency_set):
 def basic_incognito_algorithm(priority_queue):
     init_C1_and_E1()
     queue = priority_queue
-    # marked_nodes = {(marked, node_ID)}
+
     marked_nodes = set()
 
     for i in range(1, len(Q) + 1):
@@ -533,11 +523,12 @@ if __name__ == "__main__":
     if threshold >= k or threshold < 0:
         print("ERROR: threshold value is invalid")
         exit(0)
+
     # the first domain generalization hierarchies are the simple A0->A1, O0->O1->O2 and, obviously, the first candidate
-    # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}. I have to create the Nodes and Edges tables
+    # nodes Ci (i=1) are the "0" ones, that is Ci={A0, O0}
     create_tables_Ci_Ei()
 
-    # I must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue -.-
+    # we must pass the priorityQueue otherwise the body of the function can't see and instantiates a PriorityQueue
     basic_incognito_algorithm(queue.PriorityQueue())
 
     cursor.execute("SELECT * FROM S" + str(len(Q)))
