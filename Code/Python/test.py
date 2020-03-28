@@ -15,11 +15,6 @@ def execute(k, execution_times):
         print("Execution time with " + i_str + " QIs and k= " + k_str + ": " + str(execution_time))
         print()
         execution_times.append(execution_time)
-        """
-        yes = input("Continue? y/n\n")
-        if not (yes == "y" or yes == "Y"):
-            break
-        """
 
 
 def plot_with_k(k):
@@ -38,4 +33,4 @@ if __name__ == "__main__":
 
     QIs = range(2, 6)
     plot_with_k(2)
-    #plot_with_k(10)
+    plot_with_k(10)
