@@ -47,7 +47,7 @@ The dimension tables file must be provided in JSON, and have the following shape
     }
     
 Where "0" indicates the non-anonymous values and "1", "2", etc. their increasingly
-deeper anonymization levels. Each level must have the same number of values, and the
+higher anonymization levels. Each level must have the same number of values, and the
 single elements in each level must correspond (i.e. the i-th element in "0" will be
 generalized into the i-th element in "1", then into the i-th element in "2", etc.).
 
