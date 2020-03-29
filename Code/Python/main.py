@@ -395,9 +395,9 @@ def basic_incognito_algorithm(priority_queue):
         Si = set(cursor)
 
         # no edge directed to a node => root
-        cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE C" + i_str + ".ID = E" + i_str + ".start "
-                       "EXCEPT "
-                       "SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE C" + i_str + ".ID = E" + i_str + ".end ")
+        cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE C" + i_str + ".ID = E" +
+                       i_str + ".start EXCEPT SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE C" +
+                       i_str + ".ID = E" + i_str + ".end ")
         roots = set(cursor)
         roots_in_queue = set()
 
