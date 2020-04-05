@@ -183,8 +183,6 @@ def get_dims_and_indexes_of_node(node):
 
 def frequency_set_of_T_wrt_attributes_of_node_using_parent_s_frequency_set(node, i):
     i_str = str(i)
-    cursor.execute("SELECT C" + i_str + ".* FROM C" + i_str + ", E" + i_str + " WHERE E" + i_str + ".start = C" +
-                   i_str + ".ID and E" + i_str + ".end = " + str(node[0]))
     dims_and_indexes_s_node = get_dims_and_indexes_of_node(node)
 
     attributes = get_dimensions_of_node(node)
